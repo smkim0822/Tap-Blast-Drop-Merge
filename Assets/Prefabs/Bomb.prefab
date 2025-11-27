@@ -165,3 +165,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a8322247daf4cb242aeb5121b476649a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  grainPrefab: {fileID: 3571641271259647008, guid: 81952aa81374be2469eb4ea6506b4fc5, type: 3}
+  grainCount: 15
+  explosionForce: 1

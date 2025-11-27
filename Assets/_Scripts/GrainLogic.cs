@@ -1,0 +1,44 @@
+using UnityEngine;
+
+public class GrainLogic : MonoBehaviour
+{
+    // 출신 번호 (BombLogic에서 할당)
+    public int batchId = -1;
+
+    private SpriteRenderer myRenderer;
+
+    void Start(){
+        myRenderer = GetComponent<SpriteRenderer>();
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        // 다른 알갱이와 닿았을 때
+        GrainLogic otherGrain = collision.gameObject.GetComponent<GrainLogic>();
+
+        if (otherGrain != null)
+        {
+            // 색상 비교
+            if (IsColorMatch(myRenderer.color, otherGrain.GetComponent<SpriteRenderer>().color))
+            {
+                // 출신 비교
+                if (this.batchId != otherGrain.batchId)
+                {
+                    // 둘 다 사라짐
+                    DestroyGrain();
+                    otherGrain.DestroyGrain();
+                }
+            }
+        }
+    }
+
+    public void DestroyGrain(){
+        // 나중에 여기에 파티클 효과를 넣으면 됨
+        Destroy(gameObject);
+    }
+
+    bool IsColorMatch(Color c1, Color c2)
+    {
+        return (Mathf.Abs(c1.r - c2.r) + Mathf.Abs(c1.g - c2.g) + Mathf.Abs(c1.b - c2.b)) < 0.1f;
+    }
+}
