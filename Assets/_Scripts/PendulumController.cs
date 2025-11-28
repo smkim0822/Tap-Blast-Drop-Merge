@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class PendulumController : MonoBehaviour
 {
@@ -26,6 +27,9 @@ public class PendulumController : MonoBehaviour
 
         // 2. 탭하면 발사
         if (Input.GetMouseButtonDown(0)){
+            // UI가 켜져있으면 무시
+            if (EventSystem.current.IsPointerOverGameObject()) return;
+            
             DropBomb();
         }
     }

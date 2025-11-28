@@ -168,3 +168,5 @@ MonoBehaviour:
   grainPrefab: {fileID: 3571641271259647008, guid: 81952aa81374be2469eb4ea6506b4fc5, type: 3}
   grainCount: 15
   explosionForce: 1
+  minSize: 0.3
+  maxSize: 0.8
