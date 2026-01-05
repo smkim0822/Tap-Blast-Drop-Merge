@@ -4,6 +4,8 @@ public class GrainLogic : MonoBehaviour
 {
     // 출신 번호 (BombLogic에서 할당)
     public int batchId = -1;
+    // 오디오 파일 변수
+    public AudioClip popSound;
 
     private SpriteRenderer myRenderer;
 
@@ -33,6 +35,15 @@ public class GrainLogic : MonoBehaviour
     }
 
     public void DestroyGrain(){
+        // 사운드 재생
+        if (popSound != null)
+        {
+            AudioSource.PlayClipAtPoint(popSound, transform.position, 1.0f);
+        }
+
+        // 진동
+        Handheld.Vibrate();
+        
         // 나중에 여기에 파티클 효과를 넣으면 됨
         Destroy(gameObject);
     }
