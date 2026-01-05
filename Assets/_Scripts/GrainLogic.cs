@@ -44,7 +44,7 @@ public class GrainLogic : MonoBehaviour
         }
 
         // 진동
-        Handheld.Vibrate();
+        // Handheld.Vibrate();
         
         // 파티클 생성 및 색상 적용
         if (explosionEffect != null)
