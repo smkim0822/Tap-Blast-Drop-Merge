@@ -167,3 +167,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   batchId: -1
   popSound: {fileID: 8300000, guid: b482bb15565b2a14ca25a32313086f43, type: 3}
+  explosionEffect: {fileID: 290198698698734281, guid: 983fc9bd75ff71549bcd3e10b7355429, type: 3}

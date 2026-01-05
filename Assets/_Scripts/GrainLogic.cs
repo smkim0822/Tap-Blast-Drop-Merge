@@ -6,6 +6,8 @@ public class GrainLogic : MonoBehaviour
     public int batchId = -1;
     // 오디오 파일 변수
     public AudioClip popSound;
+    // 파티클 프리팹 변수
+    public ParticleSystem explosionEffect;
 
     private SpriteRenderer myRenderer;
 
@@ -44,7 +46,16 @@ public class GrainLogic : MonoBehaviour
         // 진동
         Handheld.Vibrate();
         
-        // 나중에 여기에 파티클 효과를 넣으면 됨
+        // 파티클 생성 및 색상 적용
+        if (explosionEffect != null)
+        {
+            ParticleSystem ps = Instantiate(explosionEffect, transform.position, Quaternion.identity);
+
+            var main = ps.main;
+
+            main.startColor = myRenderer.color;
+            Destroy(ps.gameObject, main.startLifetime.constantMax + 0.1f);
+        }
         Destroy(gameObject);
     }
 
