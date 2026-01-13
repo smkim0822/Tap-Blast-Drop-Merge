@@ -1365,9 +1365,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bombPrefab: {fileID: 8619092646198070267, guid: d29662b69e4d37148837ab3fd8e20eeb, type: 3}
   grainColors:
-  - {r: 1, g: 0, b: 0, a: 0}
-  - {r: 0, g: 1, b: 0, a: 0}
-  - {r: 0, g: 0, b: 1, a: 0}
+  - {r: 1, g: 0, b: 0, a: 1}
+  - {r: 0, g: 1, b: 0, a: 1}
+  - {r: 0, g: 0, b: 1, a: 1}
   xRange: 2.5
 --- !u!1 &1403195417
 GameObject:
