@@ -7,13 +7,40 @@ public class DragSpawner : MonoBehaviour
     public Color[] grainColors;
     public float xRange =  2.5f;
 
+    // 입력 대기시간
+    public float spawnCooldown = 0.8f;
+    private float lastSpawnTime = 0f;
+
     private bool isDragging = false;
+
+    // 시각 처리
+    private SpriteRenderer myRenderer;
+    private Color nextColor;
+
+    void Start()
+    {
+        lastSpawnTime = -spawnCooldown;
+
+        myRenderer = GetComponent<SpriteRenderer>();
+
+        PrepareNextBomb();
+        if (myRenderer != null) myRenderer.enabled = true;
+    }
 
     void Update()
     {
         if (EventSystem.current.IsPointerOverGameObject()) return;
 
-        // 터치 위치를 월드 좌표로 반환
+        // 대기시간 처리
+        if (Time.time >= lastSpawnTime + spawnCooldown && myRenderer.enabled == false)
+        {
+            PrepareNextBomb();
+            myRenderer.enabled = true;
+        }
+
+        if (myRenderer.enabled == false) return;
+
+        // 드래그 로직 (터치 위치를 월드 좌표로 반환)
         Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mousePos.z = 0;
         mousePos.y = transform.position.y;
@@ -44,6 +71,9 @@ public class DragSpawner : MonoBehaviour
 
     void DropBomb()
     {
+        // 발사 시간 기록
+        lastSpawnTime = Time.time;
+
         GameObject newBomb = Instantiate(bombPrefab, transform.position, Quaternion.identity);
 
         if (grainColors.Length > 0)
@@ -51,7 +81,25 @@ public class DragSpawner : MonoBehaviour
             SpriteRenderer sr = newBomb.GetComponent<SpriteRenderer>();
             if (sr != null)
             {
-                sr.color = grainColors[Random.Range(0, grainColors.Length)];
+                sr.color = nextColor;
+            }
+        }
+
+        if (myRenderer != null)
+        {
+            myRenderer.enabled = false;
+        }
+    }
+
+    void PrepareNextBomb()
+    {
+        if (grainColors.Length > 0)
+        {
+            nextColor = grainColors[Random.Range(0, grainColors.Length)];
+
+            if (myRenderer != null)
+            {
+                myRenderer.color = nextColor;
             }
         }
     }

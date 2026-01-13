@@ -8,6 +8,10 @@ public class AutoSliderSpawner : MonoBehaviour
     public float moveSpeed = 3f;    // 이동 속도
     public float xRange = 2.5f;     // 좌우 이동 범위 (중앙 기준)
 
+    // 입력 대기시간
+    public float spawnCooldown = 0.8f;
+    private float lastSpawnTime = 0f;
+
     private SpriteRenderer myRenderer;
     private Color nextColor;
 
@@ -15,6 +19,9 @@ public class AutoSliderSpawner : MonoBehaviour
     {
         myRenderer = GetComponent<SpriteRenderer>();
         PrepareNextBomb();
+
+        // 시간 초기화
+        lastSpawnTime = -spawnCooldown;
     }
 
     void Update()
@@ -28,12 +35,18 @@ public class AutoSliderSpawner : MonoBehaviour
         {
             if (EventSystem.current.IsPointerOverGameObject()) return;
             
-            DropBomb();
+            if (Time.time >= lastSpawnTime + spawnCooldown)
+            {
+                DropBomb();
+            }
         }
     }
 
     void DropBomb()
     {
+        // 발사 시간 기록
+        lastSpawnTime = Time.time;
+        
         GameObject newBomb = Instantiate(bombPrefab, transform.position, Quaternion.identity);
 
         SpriteRenderer sr = newBomb.GetComponent<SpriteRenderer>();

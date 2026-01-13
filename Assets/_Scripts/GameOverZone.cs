@@ -1,22 +1,30 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class GameOverZone : MonoBehaviour
 {
+    public float limitTime = 0.5f;
     private float timer = 0f;
-    private bool isDanger = false;  // 위험 상태 플래그
+
+    private List<GameObject> stackList = new List<GameObject>();
 
     void Update()
     {
-        if (isDanger)
+        stackList.RemoveAll(item => item == null);
+
+        if (stackList.Count  > 0)
         {
             timer += Time.deltaTime;
-            Debug.Log($"Game Over Timer: {timer}");
 
-            if (timer > 0.5f)
+            Debug.Log($"game Over Timer: {timer:F2}");
+
+            if (timer > limitTime)
             {
-                Debug.Log("Game Over Triggerd!");
+                Debug.Log("Game Over Triggered!");
                 GameManager.instance.TriggerGameOver();
-                isDanger = false;
+
+                stackList.Clear();
+                timer = 0f;
             }
         }
         else
@@ -25,21 +33,24 @@ public class GameOverZone : MonoBehaviour
         }
     }
 
-    // 닿기 시작하면 위험 상태 ON
+    // 닿으면 명단에 추가
     void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Stack"))
         {
-            isDanger = true;
+            if (!stackList.Contains(other.gameObject))
+            {
+                stackList.Add(other.gameObject);
+            }
         }
     }
 
-    // 떨어지면 위험 상태 OFF
+    // 나가면 명단에서 삭제
     void OnTriggerExit2D(Collider2D other)
     {
         if (other.CompareTag("Stack"))
         {
-            isDanger = false;
+            stackList.Remove(other.gameObject);
         }
     }
 }
