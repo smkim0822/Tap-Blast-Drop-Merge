@@ -5,13 +5,13 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Lobby.unity
     guid: ae0241e5f61eb2947bf89828512e2f3c
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Game_PendulumControl.unity
     guid: 629e3af3d8985c548921cd046f52fbc7
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Game_SliderControl.unity
     guid: 618319ae9e8bcdb4881fb8603ca6ea1a
   - enabled: 1

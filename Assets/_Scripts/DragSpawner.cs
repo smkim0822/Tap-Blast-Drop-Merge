@@ -1,105 +1,173 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
+using System.Collections;
 
 public class DragSpawner : MonoBehaviour
 {
+    [Header("Settings")]
+    [Tooltip("생성할 폭탄 프리팹")]
     public GameObject bombPrefab;
-    public Color[] grainColors;
-    public float xRange =  2.5f;
 
-    // 입력 대기시간
-    public float spawnCooldown = 0.8f;
-    private float lastSpawnTime = 0f;
+    [Tooltip("화면 좌우 이동 제한 범위 (X축)")]
+    public float xLimit = 2.6f;
 
+    [Tooltip("재장전 시간")]
+    public float cooldownTime = 0.5f;
+
+    [Header("Colors")]
+    public Color[] bombColors;
+    
+    [Header("Guide Line")]
+    [Tooltip("라인 렌더러 컴포넌트 연결")]
+    public LineRenderer guideLine;
+
+    [Tooltip("가이드 라인이 바닥에 닿을 바닥의 Y좌표")]
+    public float groundY = -4.5f;
+
+    [Tooltip("점선 간격 조절")]
+    public float lineTextureScale = 1;
+
+    private Camera mainCam;
     private bool isDragging = false;
+    private bool isReloading = false;
 
-    // 시각 처리
-    private SpriteRenderer myRenderer;
+    private SpriteRenderer spawnerRenderer;
     private Color nextColor;
 
     void Start()
     {
-        lastSpawnTime = -spawnCooldown;
+        mainCam = Camera.main;
+        spawnerRenderer = GetComponent<SpriteRenderer>();
 
-        myRenderer = GetComponent<SpriteRenderer>();
+        // 라인 렌더러 초기화
+        if (guideLine == null)
+        {
+            guideLine = GetComponent<LineRenderer>();
+        }
+        guideLine.positionCount = 2;
+        guideLine.enabled = false;
 
-        PrepareNextBomb();
-        if (myRenderer != null) myRenderer.enabled = true;
+        guideLine.textureMode = LineTextureMode.Tile;
+
+        PickNewColor();
     }
 
     void Update()
     {
-        if (EventSystem.current.IsPointerOverGameObject()) return;
+        if (isReloading) return;
 
-        // 대기시간 처리
-        if (Time.time >= lastSpawnTime + spawnCooldown && myRenderer.enabled == false)
+        HandleInput();
+
+        // 드래그 중일 때만 가이드 라인 표시
+        if (isDragging)
         {
-            PrepareNextBomb();
-            myRenderer.enabled = true;
+            DrawGuideLine();
         }
+        else
+        {
+            guideLine.enabled = false;
+        }
+    }
 
-        if (myRenderer.enabled == false) return;
-
-        // 드래그 로직 (터치 위치를 월드 좌표로 반환)
-        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePos.z = 0;
-        mousePos.y = transform.position.y;
-
-        // 범위 제한
-        mousePos.x = Mathf.Clamp(mousePos.x, -xRange, xRange);
-
-        // 드래그 시작
-        if (Input.GetMouseButton(0))
+    void HandleInput()
+    {
+        // 터치 시작
+        if (Input.GetMouseButtonDown(0))
         {
             isDragging = true;
-            transform.position = mousePos;
+            guideLine.enabled = true;
         }
 
         // 드래그 중
         if (Input.GetMouseButton(0) && isDragging)
         {
-            transform.position = mousePos;
+            MoveSpawner();
         }
 
-        // 드래그 끝
+        // 터치 끝
         if (Input.GetMouseButtonUp(0) && isDragging)
         {
             isDragging = false;
-            DropBomb();
+            guideLine.enabled = false;
+            StartCoroutine(DropBombRoutine());
         }
     }
 
-    void DropBomb()
+    void MoveSpawner()
     {
-        // 발사 시간 기록
-        lastSpawnTime = Time.time;
+        // 마우스 화면 좌표 -> 월드 좌표로 변환
+        Vector3 mousePos = mainCam.ScreenToWorldPoint(Input.mousePosition);
 
-        GameObject newBomb = Instantiate(bombPrefab, transform.position, Quaternion.identity);
+        // X축 이동 제한 (Clamp)
+        float clampedX = Mathf.Clamp(mousePos.x, -xLimit, xLimit);
 
-        if (grainColors.Length > 0)
+        // 이동
+        transform.position = new Vector2(clampedX, transform.position.y);
+    }
+
+    void DrawGuideLine()
+    {
+        // 시작점: 스포너의 현재 위치
+        guideLine.SetPosition(0, transform.position);
+
+        // 끝점: X는 스포너와 같고, Y는 바닥까지
+        Vector3 endPos = new Vector3(transform.position.x, groundY, 0);
+        guideLine.SetPosition(1, endPos);
+
+        float distance = Vector3.Distance(transform.position, endPos);
+        guideLine.material.mainTextureScale = new Vector2(distance * lineTextureScale, 1);
+    }
+
+    IEnumerator DropBombRoutine()
+    {
+        // 폭탄 생성
+        if (bombPrefab != null)
         {
-            SpriteRenderer sr = newBomb.GetComponent<SpriteRenderer>();
-            if (sr != null)
+            GameObject newBomb = Instantiate(bombPrefab, transform.position, Quaternion.identity);
+
+            SpriteRenderer bombRenderer = newBomb.GetComponent<SpriteRenderer>();
+            if (bombRenderer != null)
             {
-                sr.color = nextColor;
+                bombRenderer.color = nextColor;
+                Color fixedColor = nextColor;
+                fixedColor.a = 1f;
+                bombRenderer.color = fixedColor;
             }
         }
 
-        if (myRenderer != null)
-        {
-            myRenderer.enabled = false;
-        }
+        // 재장전 시작
+        isReloading = true;
+        spawnerRenderer.enabled = false;
+
+        // 장전 대기시간
+        yield return new WaitForSeconds(cooldownTime);
+
+        // 재장전 완료
+        PickNewColor();
+        spawnerRenderer.enabled = true;
+        isReloading = false;
     }
 
-    void PrepareNextBomb()
+    void PickNewColor()
     {
-        if (grainColors.Length > 0)
+        if (bombColors.Length > 0)
         {
-            nextColor = grainColors[Random.Range(0, grainColors.Length)];
+            int randomIndex = Random.Range(0, bombColors.Length);
+            nextColor = bombColors[randomIndex];
 
-            if (myRenderer != null)
+            // 스포너 색상 변경
+            if (spawnerRenderer != null)
             {
-                myRenderer.color = nextColor;
+                spawnerRenderer.color = nextColor;
+            }
+
+            // 가이드 라인 색상 동기화
+            if (guideLine != null)
+            {
+                guideLine.startColor = nextColor;
+
+                Color fadedColor = nextColor;
+                fadedColor.a = 0.3f;
+                guideLine.endColor = fadedColor;
             }
         }
     }
