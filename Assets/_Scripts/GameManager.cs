@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 public class GameManager : MonoBehaviour
 {
@@ -7,8 +8,14 @@ public class GameManager : MonoBehaviour
 
     public static bool isRestart = false;
 
+    [Header("Panels")]
     public GameObject startPanel;       // 시작 화면
     public GameObject gameOverPanel;    // 게임 오버 화면
+    public GameObject pausePanel;       // 일시정지 화면
+
+    [Header("Game Groups")]
+    public GameObject gamePlayObjects;  // 월드 오브젝트
+    public GameObject gamePlayUI;       // 인게임 UI
 
     void Awake()
     {
@@ -17,28 +24,62 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // 재시작인 경우 (Restart 버튼 누름)
+        if (pausePanel != null) pausePanel.SetActive(false);
+
+        // [재시작] 모드로 온 경우
         if (isRestart == true)
         {
             Time.timeScale = 1;
             startPanel.SetActive(false);
             gameOverPanel.SetActive(false);
 
+            if (gamePlayObjects != null) gamePlayObjects.SetActive(true);
+            if (gamePlayUI != null) gamePlayUI.SetActive(true);
+
             isRestart = false;
         }
-        // 처음 들어온 경우
+        // [메인 메뉴] 모드로 온 경우
         else
         {
-            Time.timeScale = 0;
+            Time.timeScale = 1;
             startPanel.SetActive(true);
             gameOverPanel.SetActive(false);
+
+            if (gamePlayObjects != null) gamePlayObjects.SetActive(false);
+            if (gamePlayUI != null) gamePlayUI.SetActive(false);
         }
+    }
+
+    // [일시정지] 버튼 클릭
+    public void OnClickPause()
+    {
+        Time.timeScale = 0;
+        if (pausePanel != null) pausePanel.SetActive(true);
+    }
+
+    // [계속 하기] 버튼 클릭
+    public void OnClickResume()
+    {
+        Time.timeScale = 1;
+        if (pausePanel != null) pausePanel.SetActive(false);
+    }
+
+    // [메인으로] 버튼 클릭
+    public void OnClickGoToMain()
+    {
+        Time.timeScale = 1;
+        isRestart = false;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     // [게임 시작] 버튼용 함수
     public void OnClickStart()
     {
         startPanel.SetActive(false);
+
+        if (gamePlayObjects != null) gamePlayObjects.SetActive(true);
+        if (gamePlayUI != null) gamePlayUI.SetActive(true);
+
         Time.timeScale = 1; // 시간 흐르게 하기
     }
 

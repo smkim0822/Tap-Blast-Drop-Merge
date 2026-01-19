@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -63,6 +64,10 @@ public class Spawner : MonoBehaviour
 
     void Update()
     {
+        if (Time.timeScale == 0) return;
+
+        if (IsPointerOverUI()) return;
+
         if (isReloading) return;
 
         HandleInput();
@@ -70,6 +75,19 @@ public class Spawner : MonoBehaviour
         // 드래그 중일 때만 가이드 라인 표시
         if (isDragging) DrawGuideLine();
         else guideLine.enabled = false;
+    }
+
+    // 입력이 UI 위인지 판별하는 함수
+    private bool IsPointerOverUI()
+    {
+        if (EventSystem.current.IsPointerOverGameObject()) return true;
+
+        if (Input.touchCount > 0)
+        {
+            if (EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId)) return true;
+        }
+
+        return false;
     }
 
     void HandleInput()
