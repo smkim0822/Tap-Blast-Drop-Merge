@@ -8,8 +8,8 @@ public class BombLogic : MonoBehaviour
     public float explosionForce = 3.0f; // 퍼지는 힘
 
     [Header("Size Settings")]
-    public float minSize = 0.3f;    // 최소 크기
-    public float maxSize = 0.8f;    // 최대 크기
+    public float minSize = 0.1f;    // 최소 크기
+    public float maxSize = 0.6f;    // 최대 크기
 
     // 폭탄 번호
     private static int globalBatchIdCounter = 0;

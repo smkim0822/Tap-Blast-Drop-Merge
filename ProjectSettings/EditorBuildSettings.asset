@@ -5,17 +5,8 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/Scenes/Lobby.unity
-    guid: ae0241e5f61eb2947bf89828512e2f3c
-  - enabled: 0
-    path: Assets/Scenes/Game_PendulumControl.unity
-    guid: 629e3af3d8985c548921cd046f52fbc7
-  - enabled: 0
-    path: Assets/Scenes/Game_SliderControl.unity
-    guid: 618319ae9e8bcdb4881fb8603ca6ea1a
   - enabled: 1
-    path: Assets/Scenes/Game_DragControl.unity
+    path: Assets/Scenes/Ingame.unity
     guid: c04cc172fb055f44ebfee4b985804b32
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

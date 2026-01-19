@@ -1,20 +1,26 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
-public class DragSpawner : MonoBehaviour
+public class Spawner : MonoBehaviour
 {
     [Header("Settings")]
     [Tooltip("생성할 폭탄 프리팹")]
     public GameObject bombPrefab;
 
     [Tooltip("화면 좌우 이동 제한 범위 (X축)")]
-    public float xLimit = 2.6f;
+    public float xLimit = 1.6f;
 
     [Tooltip("재장전 시간")]
     public float cooldownTime = 0.5f;
 
     [Header("Colors")]
     public Color[] bombColors;
+
+    [Header("UI References")]
+    [Tooltip("다음 폭탄 색상 UI 이미지")]
+    public Image[] nextBombUIs;
     
     [Header("Guide Line")]
     [Tooltip("라인 렌더러 컴포넌트 연결")]
@@ -31,7 +37,9 @@ public class DragSpawner : MonoBehaviour
     private bool isReloading = false;
 
     private SpriteRenderer spawnerRenderer;
-    private Color nextColor;
+
+    private Color currentColor;     // 현재 색
+    private List<Color> nextColors = new List<Color>();        // 다음 색
 
     void Start()
     {
@@ -48,7 +56,9 @@ public class DragSpawner : MonoBehaviour
 
         guideLine.textureMode = LineTextureMode.Tile;
 
-        PickNewColor();
+        // 게임 시작 시 초기화
+        InitializeQueue();
+        PrepareNextBomb();
     }
 
     void Update()
@@ -58,14 +68,8 @@ public class DragSpawner : MonoBehaviour
         HandleInput();
 
         // 드래그 중일 때만 가이드 라인 표시
-        if (isDragging)
-        {
-            DrawGuideLine();
-        }
-        else
-        {
-            guideLine.enabled = false;
-        }
+        if (isDragging) DrawGuideLine();
+        else guideLine.enabled = false;
     }
 
     void HandleInput()
@@ -127,10 +131,9 @@ public class DragSpawner : MonoBehaviour
             SpriteRenderer bombRenderer = newBomb.GetComponent<SpriteRenderer>();
             if (bombRenderer != null)
             {
-                bombRenderer.color = nextColor;
-                Color fixedColor = nextColor;
-                fixedColor.a = 1f;
-                bombRenderer.color = fixedColor;
+                Color finalColor = currentColor;
+                finalColor.a = 1f;
+                bombRenderer.color = finalColor;
             }
         }
 
@@ -142,32 +145,65 @@ public class DragSpawner : MonoBehaviour
         yield return new WaitForSeconds(cooldownTime);
 
         // 재장전 완료
-        PickNewColor();
+        PrepareNextBomb();
+
         spawnerRenderer.enabled = true;
         isReloading = false;
     }
 
-    void PickNewColor()
+    // 대기열 3개 채우기
+    void InitializeQueue()
+    {
+        for (int i = 0; i < nextBombUIs.Length; i++)
+        {
+            nextColors.Add(PickRandomColor());
+        }
+    }
+
+    // 다음 폭탄을 현재 폭탄으로 가져오고, 새로운 다음 폭탄을 뽑는 함수
+    void PrepareNextBomb()
+    {
+        int lastIndex = nextColors.Count - 1;
+        currentColor = nextColors[lastIndex];
+
+        nextColors.RemoveAt(lastIndex);
+
+        nextColors.Insert(0, PickRandomColor());
+
+        // 시각적 업데이트
+        UpdateVisuals();
+    }
+
+    Color PickRandomColor()
     {
         if (bombColors.Length > 0)
         {
             int randomIndex = Random.Range(0, bombColors.Length);
-            nextColor = bombColors[randomIndex];
+            return bombColors[randomIndex];
+        }
+        return Color.white;
+    }
 
-            // 스포너 색상 변경
-            if (spawnerRenderer != null)
+    void UpdateVisuals()
+    {
+        // 스포너 색상 업데이트
+        if (spawnerRenderer != null) spawnerRenderer.color = currentColor;
+
+        // 가이드 라인 색상 업데이트
+        if (guideLine != null)
+        {
+            guideLine.startColor = currentColor;
+            Color fadedColor = currentColor;
+            fadedColor.a = 0.3f;
+            guideLine.endColor = fadedColor;
+        }
+
+        // UI 업데이트
+        for (int i = 0; i < nextBombUIs.Length; i++)
+        {
+            if (i < nextColors.Count)
             {
-                spawnerRenderer.color = nextColor;
-            }
-
-            // 가이드 라인 색상 동기화
-            if (guideLine != null)
-            {
-                guideLine.startColor = nextColor;
-
-                Color fadedColor = nextColor;
-                fadedColor.a = 0.3f;
-                guideLine.endColor = fadedColor;
+                nextBombUIs[i].color = nextColors[i];
             }
         }
     }
