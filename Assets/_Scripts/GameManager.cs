@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,6 +17,9 @@ public class GameManager : MonoBehaviour
     [Header("Game Groups")]
     public GameObject gamePlayObjects;  // 월드 오브젝트
     public GameObject gamePlayUI;       // 인게임 UI
+
+    [Header("Game Over UI")]
+    public TextMeshProUGUI finalScoreText;  // 최종 점수 표시할 텍스트
 
     void Awake()
     {
@@ -104,6 +108,13 @@ public class GameManager : MonoBehaviour
     public void TriggerGameOver()
     {
         Time.timeScale = 0; // 시간 정지
-        gameOverPanel.SetActive(true);
+        gameOverPanel.SetActive(true);  // 패널 켜기
+
+        // 최종 점수 표시
+        if (finalScoreText != null && ScoreManager.Instance != null)
+        {
+            int score = ScoreManager.Instance.GetCurrentScore();
+            finalScoreText.text = "Final Score\n" + score.ToString();
+        }
     }
 }

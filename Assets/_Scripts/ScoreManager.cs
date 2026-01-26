@@ -46,4 +46,10 @@ public class ScoreManager : MonoBehaviour
 
         if (bestScoreText != null) bestScoreText.text = "Best: " + bestScore.ToString();
     }
+
+    // 외부에서 현재 점수를 가져갈 수 있게 하는 함수
+    public int GetCurrentScore()
+    {
+        return currentScore;
+    }
 }
