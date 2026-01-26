@@ -9,6 +9,13 @@ public class GrainLogic : MonoBehaviour
     // 파티클 프리팹 변수
     public ParticleSystem explosionEffect;
 
+    [Header("Score Settings")]
+    [Tooltip("점수 계산 배율 (크기 * 배율 = 기본 점수)")]
+    public float scoreMultiplier = 1f;
+
+    [Tooltip("배치 ID당 점수 증가율 (0.1 = 10%씩 증가, 0.01 = 1%씩 증가)")]
+    public float scoreGrowthRate = 0.05f;
+
     private SpriteRenderer myRenderer;
 
     void Start(){
@@ -37,6 +44,19 @@ public class GrainLogic : MonoBehaviour
     }
 
     public void DestroyGrain(){
+        // 기본 점수 계산 (크기 * 기본 배율)
+        float baseScore = transform.localScale.x * scoreMultiplier;
+
+        // 성장 배율 계산 (1 + 진행도 * 성장률)
+        float currentEra = BombLogic.globalBatchIdCounter;
+        float growthFactor = 1.0f + (currentEra * scoreGrowthRate);
+
+        // 최종 점수 계산
+        int finalScore = Mathf.Max(1, Mathf.RoundToInt(baseScore * growthFactor));
+
+        // 점수 추가
+        if (ScoreManager.Instance != null) ScoreManager.Instance.AddScore(finalScore);
+        
         // 사운드 재생
         if (popSound != null)
         {

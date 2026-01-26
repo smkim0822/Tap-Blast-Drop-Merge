@@ -12,7 +12,7 @@ public class BombLogic : MonoBehaviour
     public float maxSize = 0.6f;    // 최대 크기
 
     // 폭탄 번호
-    private static int globalBatchIdCounter = 0;
+    public static int globalBatchIdCounter = 0;
 
     private bool hasExploded = false;
 
