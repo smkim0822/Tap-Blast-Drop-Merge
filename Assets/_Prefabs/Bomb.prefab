@@ -169,4 +169,4 @@ MonoBehaviour:
   grainCount: 15
   explosionForce: 1
   minSize: 0.2
-  maxSize: 0.7
+  maxSize: 0.6

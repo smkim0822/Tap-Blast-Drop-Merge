@@ -57,6 +57,10 @@ public class Spawner : MonoBehaviour
 
         guideLine.textureMode = LineTextureMode.Tile;
 
+        // 표시선이 테두리 위로 보이는 문제
+        // 표시선을 강제로 맨 뒤로 보냄
+        guideLine.sortingOrder = -10;
+
         // 게임 시작 시 초기화
         InitializeQueue();
         PrepareNextBomb();
