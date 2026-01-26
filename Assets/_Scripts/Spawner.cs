@@ -27,7 +27,7 @@ public class Spawner : MonoBehaviour
     [Tooltip("라인 렌더러 컴포넌트 연결")]
     public LineRenderer guideLine;
 
-    [Tooltip("가이드 라인이 바닥에 닿을 바닥의 Y좌표")]
+    [Tooltip("표시선이 바닥에 닿을 바닥의 Y좌표")]
     public float groundY = -4.5f;
 
     [Tooltip("점선 간격 조절")]
@@ -76,7 +76,7 @@ public class Spawner : MonoBehaviour
 
         HandleInput();
 
-        // 드래그 중일 때만 가이드 라인 표시
+        // 드래그 중일 때만 표시선 표시
         if (isDragging) DrawGuideLine();
         else guideLine.enabled = false;
     }
@@ -211,7 +211,7 @@ public class Spawner : MonoBehaviour
         // 스포너 색상 업데이트
         if (spawnerRenderer != null) spawnerRenderer.color = currentColor;
 
-        // 가이드 라인 색상 업데이트
+        // 표시선 색상 업데이트
         if (guideLine != null)
         {
             guideLine.startColor = currentColor;
@@ -225,6 +225,21 @@ public class Spawner : MonoBehaviour
         {
             if (i < nextColors.Count)
             {
+                Color uiColor = nextColors[i];
+
+                bool isNextBomb = (i == nextColors.Count - 1);
+
+                if (isNextBomb)
+                {
+                    uiColor.a = 1.0f;
+                    nextBombUIs[i].transform.localScale = Vector3.one * 1.2f;
+                }
+                else
+                {
+                    uiColor.a = 0.5f;
+                    nextBombUIs[i].transform.localScale = Vector3.one * 0.8f;
+                }
+                
                 nextBombUIs[i].color = nextColors[i];
             }
         }
