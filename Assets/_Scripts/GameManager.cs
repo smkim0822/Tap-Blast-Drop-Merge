@@ -97,13 +97,6 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    // [종료] 버튼용 함수
-    public void OnClickQuit()
-    {
-        Debug.Log("게임 종료");
-        Application.Quit();
-    }
-
     // 게임 오버시 호출될 함수
     public void TriggerGameOver()
     {
