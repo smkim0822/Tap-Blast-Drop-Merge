@@ -170,3 +170,4 @@ MonoBehaviour:
   explosionEffect: {fileID: 290198698698734281, guid: 983fc9bd75ff71549bcd3e10b7355429, type: 3}
   scoreMultiplier: 1
   scoreGrowthRate: 0.05
+  floatingTextPrefab: {fileID: 3365603948138590316, guid: cab478d899d902f4d9c4e0693d819b6f, type: 3}

@@ -17,6 +17,9 @@ public class GrainLogic : MonoBehaviour
     [Tooltip("배치 ID당 점수 증가율 (0.1 = 10%씩 증가, 0.01 = 1%씩 증가)")]
     public float scoreGrowthRate = 0.05f;
 
+    [Header("UI Effects")]
+    public GameObject floatingTextPrefab;
+
     private SpriteRenderer myRenderer;
     private bool isDestroying = false;  // 중복 파괴 방지 플래그
 
@@ -86,6 +89,24 @@ public class GrainLogic : MonoBehaviour
 
             main.startColor = myRenderer.color;
             Destroy(ps.gameObject, main.startLifetime.constantMax + 0.1f);
+        }
+
+        // 플로팅 텍스트 생성
+        if (floatingTextPrefab != null)
+        {
+            // 프리팹 생성
+            GameObject go = Instantiate(floatingTextPrefab, transform.position, Quaternion.identity);
+
+            // 텍스트 내용 설정 ("+점수")
+            FloatingText floatingText = go.GetComponent<FloatingText>();
+            if (floatingText != null)
+            {
+                // 텍스트 설정
+                floatingText.SetText("+" + finalScore, Color.yellow);
+
+                // 공 색 동기화
+                floatingText.SetText("+" + finalScore,  myRenderer.color);
+            }
         }
 
         // 물리 비활성화 및 애니메이션 시작
