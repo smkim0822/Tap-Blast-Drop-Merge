@@ -19,7 +19,9 @@ public class GameManager : MonoBehaviour
     public GameObject gamePlayUI;       // 인게임 UI
 
     [Header("Game Over UI")]
-    public TextMeshProUGUI finalScoreText;  // 최종 점수 표시할 텍스트
+    public TextMeshProUGUI resultLabelText;     // 'Final Score' 또는 'New Record!'
+    public TextMeshProUGUI currentScoreText;    // 이번 판 점수
+    public TextMeshProUGUI bestScoreText;       // 최고 기록
 
     void Awake()
     {
@@ -100,14 +102,51 @@ public class GameManager : MonoBehaviour
     // 게임 오버시 호출될 함수
     public void TriggerGameOver()
     {
-        Time.timeScale = 0; // 시간 정지
-        gameOverPanel.SetActive(true);  // 패널 켜기
-
-        // 최종 점수 표시
-        if (finalScoreText != null && ScoreManager.Instance != null)
+        Time.timeScale = 0;     // 시간 정지
+        
+        // 1. 점수 처리 로직
+        int currentScore = 0;
+        if (ScoreManager.Instance != null)
         {
-            int score = ScoreManager.Instance.GetCurrentScore();
-            finalScoreText.text = "Final Score\n" + score.ToString();
+            currentScore = ScoreManager.Instance.GetCurrentScore();
         }
+
+        // 저장된 최고 점수 불러오기 (없으면 0)
+        int bestScore = PlayerPrefs.GetInt("BestScore", 0);
+
+        // 2. 신기록 판정
+        if (currentScore > bestScore)
+        {
+            // 신기록 갱신!
+            bestScore = currentScore;
+            PlayerPrefs.SetInt("BestScore", bestScore);
+            PlayerPrefs.Save();
+
+            // 텍스트 변경: 신기록
+            if (resultLabelText != null)
+            {
+                resultLabelText.text = "<color=yellow>NEW RECORD!</color>";
+            }
+        }
+        else
+        {
+            // 기록 갱신 실패
+            if (resultLabelText != null)
+            {
+                resultLabelText.text = "Final Score";
+            }
+        }
+
+        // 3. 점수 텍스트 표시
+        if (currentScoreText != null)
+        {
+            currentScoreText.text = currentScore.ToString("N0");
+        }
+        if (bestScoreText != null)
+        {
+            bestScoreText.text = bestScore.ToString("N0");
+        }
+
+        gameOverPanel.SetActive(true);
     }
 }
