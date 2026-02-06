@@ -40,6 +40,13 @@ public class ScoreManager : MonoBehaviour
         UpdateUI();
     }
 
+    // 점수 초기화
+    public void ResetScore()
+    {
+        currentScore = 0;
+        UpdateUI();
+    }
+
     void UpdateUI()
     {
         if (currentScoreText != null) currentScoreText.text = currentScore.ToString();
@@ -47,7 +54,6 @@ public class ScoreManager : MonoBehaviour
         if (bestScoreText != null) bestScoreText.text = "Best: " + bestScore.ToString();
     }
 
-    // 외부에서 현재 점수를 가져갈 수 있게 하는 함수
     public int GetCurrentScore()
     {
         return currentScore;

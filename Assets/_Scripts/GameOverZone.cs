@@ -21,7 +21,7 @@ public class GameOverZone : MonoBehaviour
             if (timer > limitTime)
             {
                 Debug.Log("Game Over Triggered!");
-                GameManager.instance.TriggerGameOver();
+                GameManager.Instance.TriggerGameOver();
 
                 stackList.Clear();
                 timer = 0f;

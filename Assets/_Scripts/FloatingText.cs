@@ -59,7 +59,7 @@ public class FloatingText : MonoBehaviour
         }
 
         // 서서히 투명해짐
-        if (timer > destroyTime * 0.5f);
+        if (timer > destroyTime * 0.5f)
         {
             float alpha = 1f - ((timer - destroyTime * 0.5f) / (destroyTime * 0.5f));
             textColor.a = alpha;

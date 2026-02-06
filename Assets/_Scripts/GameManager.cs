@@ -1,152 +1,141 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.EventSystems;
-using TMPro;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager instance;
+    public static GameManager Instance;
 
-    public static bool isRestart = false;
+    [Header("UI Controllers")]
+    public MainPanel mainPanel;
+    public GameOverPanel gameOverPanel;
 
-    [Header("Panels")]
-    public GameObject startPanel;       // 시작 화면
-    public GameObject gameOverPanel;    // 게임 오버 화면
-    public GameObject pausePanel;       // 일시정지 화면
-
-    [Header("Game Groups")]
-    public GameObject gamePlayObjects;  // 월드 오브젝트
+    [Header("Game Objects")]
+    public GameObject gamePlayGroup;    // 인게임 전체 그룹 (배경 등)
     public GameObject gamePlayUI;       // 인게임 UI
 
-    [Header("Game Over UI")]
-    public TextMeshProUGUI resultLabelText;     // 'Final Score' 또는 'New Record!'
-    public TextMeshProUGUI currentScoreText;    // 이번 판 점수
-    public TextMeshProUGUI bestScoreText;       // 최고 기록
+    [Header("Player")]
+    public GameObject player;           // 플레이어 오브젝트
+    public Transform playerStartPos;    // 플레이어 시작 위치
 
     void Awake()
     {
-        instance = this;
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
     }
 
     void Start()
     {
-        if (pausePanel != null) pausePanel.SetActive(false);
+        EnterMainState();
+    }
 
-        // [재시작] 모드로 온 경우
-        if (isRestart == true)
+    // 상태 전환
+
+    public void EnterMainState()
+    {
+        Time.timeScale = 1f;
+        mainPanel.gameObject.SetActive(true);
+        gameOverPanel.gameObject.SetActive(false);
+        gamePlayGroup.SetActive(false);
+        gamePlayUI.SetActive(false);
+    }
+
+    public void EnterPlayState()
+    {
+        Time.timeScale = 1f;
+        mainPanel.gameObject.SetActive(false);
+        gameOverPanel.gameObject.SetActive(false);
+        gamePlayGroup.SetActive(true);
+        gamePlayUI.SetActive(true);
+    }
+
+    // 데이터 초기화
+    public void ResetData()
+    {
+        // 1. 점수 초기화
+        if (ScoreManager.Instance != null) 
         {
-            Time.timeScale = 1;
-            startPanel.SetActive(false);
-            gameOverPanel.SetActive(false);
-
-            if (gamePlayObjects != null) gamePlayObjects.SetActive(true);
-            if (gamePlayUI != null) gamePlayUI.SetActive(true);
-
-            isRestart = false;
+            ScoreManager.Instance.ResetScore();
         }
-        // [메인 메뉴] 모드로 온 경우
-        else
-        {
-            Time.timeScale = 1;
-            startPanel.SetActive(true);
-            gameOverPanel.SetActive(false);
-
-            if (gamePlayObjects != null) gamePlayObjects.SetActive(false);
-            if (gamePlayUI != null) gamePlayUI.SetActive(false);
-        }
-    }
-
-    // [일시정지] 버튼 클릭
-    public void OnClickPause()
-    {
-        Time.timeScale = 0;
-        if (pausePanel != null) pausePanel.SetActive(true);
-    }
-
-    // [계속 하기] 버튼 클릭
-    public void OnClickResume()
-    {
-        Time.timeScale = 1;
-        if (pausePanel != null) pausePanel.SetActive(false);
-    }
-
-    // [메인으로] 버튼 클릭
-    public void OnClickGoToMain()
-    {
-        Time.timeScale = 1;
-        isRestart = false;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-    }
-
-    // [게임 시작] 버튼용 함수
-    public void OnClickStart()
-    {
-        startPanel.SetActive(false);
-
-        if (gamePlayObjects != null) gamePlayObjects.SetActive(true);
-        if (gamePlayUI != null) gamePlayUI.SetActive(true);
-
-        Time.timeScale = 1; // 시간 흐르게 하기
-    }
-
-    // [다시 하기] 버튼용 함수
-    public void OnClickRestart()
-    {
-        // 시작 메뉴 안켜지게
-        isRestart = true;
         
-        // 현재 씬을 다시 로드 (초기화)
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        // 2. 맵 초기화
+        GameObject[] stacks = GameObject.FindGameObjectsWithTag("Stack");
+        if (stacks != null)
+        {
+            foreach (GameObject obj in stacks)
+            {
+                if (obj.GetComponent<GrainLogic>() != null)
+                {
+                    Destroy(obj);
+                }
+            }
+        }
+
+        // 3. 폭탄 제거
+        BombLogic[] fallingBombs = FindObjectsByType<BombLogic>(FindObjectsSortMode.None);
+        foreach (BombLogic bomb in fallingBombs)
+        {
+            Destroy(bomb.gameObject);
+        }
+
+        // 4. 플레이어 상태 리셋
+        if (player != null)
+        {
+            Spawner spawnerScript = player.GetComponent<Spawner>();
+            if (spawnerScript != null)
+            {
+                spawnerScript.ResetSpawner();
+            }
+            else
+            {
+                player.SetActive(true);
+                if (playerStartPos != null)
+                {
+                    player.transform.position = playerStartPos.position;
+                }
+            }
+        }
     }
 
-    // 게임 오버시 호출될 함수
+    // 버튼 함수
+
+    // [재시작] : 데이터 리셋 + 바로 게임 시작
+    public void RetryGame()
+    {
+        ResetData();      // 점수, 위치 초기화
+        EnterPlayState(); // 게임 시작
+    }
+
+    // [메인으로] : 데이터 리셋 + 메인 화면 이동
+    public void GoToMain()
+    {
+        ResetData();      // 점수, 위치 초기화
+        EnterMainState(); // 메인 화면 이동
+    }
+
+    // 게임 오버
     public void TriggerGameOver()
     {
-        Time.timeScale = 0;     // 시간 정지
-        
-        // 1. 점수 처리 로직
-        int currentScore = 0;
-        if (ScoreManager.Instance != null)
-        {
-            currentScore = ScoreManager.Instance.GetCurrentScore();
-        }
+        Time.timeScale = 0; // 정지
 
-        // 저장된 최고 점수 불러오기 (없으면 0)
-        int bestScore = PlayerPrefs.GetInt("BestScore", 0);
+        // 점수 저장 및 갱신
+        int current = ScoreManager.Instance.GetCurrentScore();
+        int best = PlayerPrefs.GetInt("BestScore", 0);
+        bool isNewRecord = false;
 
-        // 2. 신기록 판정
-        if (currentScore > bestScore)
+        if (current > best)
         {
-            // 신기록 갱신!
-            bestScore = currentScore;
-            PlayerPrefs.SetInt("BestScore", bestScore);
+            best = current;
+            PlayerPrefs.SetInt("BestScore", best);
             PlayerPrefs.Save();
-
-            // 텍스트 변경: 신기록
-            if (resultLabelText != null)
-            {
-                resultLabelText.text = "<color=yellow>NEW RECORD!</color>";
-            }
-        }
-        else
-        {
-            // 기록 갱신 실패
-            if (resultLabelText != null)
-            {
-                resultLabelText.text = "Final Score";
-            }
+            isNewRecord = true;
         }
 
-        // 3. 점수 텍스트 표시
-        if (currentScoreText != null)
+        if (gamePlayUI != null)
         {
-            currentScoreText.text = currentScore.ToString("N0");
+            gamePlayUI.SetActive(false);   // 인게임 UI 숨김
         }
-        if (bestScoreText != null)
+        if (gameOverPanel != null)
         {
-            bestScoreText.text = bestScore.ToString("N0");
+            gameOverPanel.Setup(current, best, isNewRecord);    // 결과창 표시
         }
-
-        gameOverPanel.SetActive(true);
     }
 }

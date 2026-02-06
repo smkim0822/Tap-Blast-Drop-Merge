@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: cd790546cc6cabb43bac8fcf2a3997c9
+guid: 8ec9cab0c9ca1bf4ba77efb4feacdc07
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8770034739519435172
-    second: PlayIcon_0
+      213: -7735006650386036789
+    second: 3.settings_button_soundoff_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: PlayIcon_0
+      name: 3.settings_button_soundoff_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 125
-        height: 125
+        width: 188
+        height: 188
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c5ecb1bbed39a4680800000000000000
-      internalID: -8770034739519435172
+      spriteID: bc7c47cee6cb7a490800000000000000
+      internalID: -7735006650386036789
       vertices: []
       indices: 
       edges: []

@@ -176,6 +176,7 @@ public class Spawner : MonoBehaviour
     // 대기열 3개 채우기
     void InitializeQueue()
     {
+        nextColors.Clear();
         for (int i = 0; i < nextBombUIs.Length; i++)
         {
             nextColors.Add(PickRandomColor());
@@ -185,6 +186,10 @@ public class Spawner : MonoBehaviour
     // 다음 폭탄을 현재 폭탄으로 가져오고, 새로운 다음 폭탄을 뽑는 함수
     void PrepareNextBomb()
     {
+        if (nextColors.Count == 0)
+        {
+            InitializeQueue();
+        }
         int lastIndex = nextColors.Count - 1;
         currentColor = nextColors[lastIndex];
 
@@ -243,5 +248,23 @@ public class Spawner : MonoBehaviour
                 nextBombUIs[i].color = nextColors[i];
             }
         }
+    }
+
+    // 초기화
+    public void ResetSpawner()
+    {
+        // 1. 위치 초기화
+        transform.position = new Vector3(0, transform.position.y, 0);
+
+        // 2. 상태 초기화
+        StopAllCoroutines();
+        isDragging = false;
+        isReloading = false;
+        spawnerRenderer.enabled = true;
+        guideLine.enabled = false;
+
+        // 3. 폭탄 초기화
+        InitializeQueue();
+        PrepareNextBomb();
     }
 }
