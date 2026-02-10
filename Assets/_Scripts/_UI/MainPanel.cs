@@ -10,7 +10,7 @@ public class MainPanel : MonoBehaviour
 
     [Header("Popups (팝업 연결)")]
     public GameObject settingsPopup;     // 설정 팝업
-    public GameObject rankingPopup;     // 순위 팝업
+    public RankingPopup rankingPopup;     // 순위 팝업
 
     void Start()
     {
@@ -51,11 +51,11 @@ public class MainPanel : MonoBehaviour
     }
 
     // 🏆 순위 버튼
-    public void OnRankClicked()
+    public void OnClickRankingPopup()
     {
         if (rankingPopup != null)
         {
-            rankingPopup.SetActive(true);
+            rankingPopup.OpenPopup();
         }
     }
 }

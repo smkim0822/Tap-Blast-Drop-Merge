@@ -13,6 +13,9 @@ public class GameOverPanel : MonoBehaviour
     public Button retryButton;
     // public Button mainbutton;
 
+    [Header("Popups")]
+    public RankingPopup rankingPopup;
+
     void Start()
     {
         if (retryButton != null)
@@ -62,5 +65,13 @@ public class GameOverPanel : MonoBehaviour
 
         // 3. 켜기
         gameObject.SetActive(true);
+    }
+
+    public void OnClickRankingButton()
+    {
+        if (rankingPopup != null)
+        {
+            rankingPopup.OpenPopup();
+        }
     }
 }
