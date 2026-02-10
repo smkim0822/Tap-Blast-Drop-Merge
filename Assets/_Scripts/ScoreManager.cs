@@ -14,11 +14,16 @@ public class ScoreManager : MonoBehaviour
     public float punchScale = 1.25f;
     public float duration = 0.15f;
 
+    [Header("Best Score Animation")]
+    public float bestPunchScale = 1.3f;
+
     private int currentScore = 0;
     private int bestScore = 0;
 
     private Vector3 originalScale;
+    private Vector3 bestScoreOriginalScale;
     private Coroutine punchCoroutine;
+    private Coroutine bestPunchCoroutine;
 
     void Awake()
     {
@@ -29,6 +34,10 @@ public class ScoreManager : MonoBehaviour
         if (currentScoreText != null)
         {
             originalScale = currentScoreText.transform.localScale;
+        }
+        if (bestScoreText != null)
+        {
+            bestScoreOriginalScale = bestScoreText.transform.localScale;
         }
     }
 
@@ -42,6 +51,7 @@ public class ScoreManager : MonoBehaviour
     public void AddScore(int amount)
     {
         currentScore += amount;
+        bool isNewRecord = false;
 
         // 최고 기록 경신 체크 및 저장
         if (currentScore > bestScore)
@@ -49,29 +59,44 @@ public class ScoreManager : MonoBehaviour
             bestScore = currentScore;
             PlayerPrefs.SetInt("BestScore", bestScore);
             PlayerPrefs.Save();
+            isNewRecord = true;
         }
 
         UpdateUI();
 
-        // 펀치 애니메이션 실행
+        // 현재 점수 펀치 애니메이션
         if (punchCoroutine != null)
         {
             StopCoroutine(punchCoroutine);
         }
-        punchCoroutine = StartCoroutine(CoPunchText());
+        punchCoroutine = StartCoroutine(CoPunchText(currentScoreText, originalScale, punchScale));
+
+        // 최고 점수 펀치 애니메이션
+        if (isNewRecord)
+        {
+            if (bestPunchCoroutine != null)
+            {
+                StopCoroutine(bestPunchCoroutine);
+            }
+            
+            bestPunchCoroutine = StartCoroutine(CoPunchText(bestScoreText, bestScoreOriginalScale, bestPunchScale, Color.yellow));
+        }
     }
 
-    IEnumerator CoPunchText()
+    IEnumerator CoPunchText(TextMeshProUGUI targetText, Vector3 baseScale, float scaleMult, Color? flashColor = null)
     {
-        if (currentScoreText == null)
+        if (targetText == null)
         {
             yield break;
         }
 
-        // 1. 즉시 커짐
-        currentScoreText.transform.localScale = originalScale * punchScale;
+        Color originalColor = targetText.color;
+        targetText.transform.localScale = baseScale * scaleMult;
+        if (flashColor.HasValue)
+        {
+            targetText.color = flashColor.Value;
+        }
 
-        // 2. duration 동안 부드럽게 원래 크기로 복구
         float elapsed = 0f;
         while (elapsed < duration)
         {
@@ -79,12 +104,19 @@ public class ScoreManager : MonoBehaviour
             float percent = elapsed / duration;
 
             // Lerp를 사용하여 부드럽게 보간
-            currentScoreText.transform.localScale = Vector3.Lerp(originalScale * punchScale, originalScale, percent);
+            targetText.transform.localScale = Vector3.Lerp(baseScale * scaleMult, baseScale, percent);
+
+            if (flashColor.HasValue)
+            {
+                targetText.color = Color.Lerp(flashColor.Value, originalColor, percent);
+            }
+
             yield return null;
         }
 
         // 3. 마지막에 정확한 크기로 고정
-        currentScoreText.transform.localScale = originalScale;
+        targetText.transform.localScale = baseScale;
+        targetText.color = originalColor;
     }
 
     // 점수 초기화
