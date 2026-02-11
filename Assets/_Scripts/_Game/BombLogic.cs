@@ -15,6 +15,29 @@ public class BombLogic : MonoBehaviour
     public static int globalBatchIdCounter = 0;
 
     private bool hasExploded = false;
+    private SpriteRenderer myRenderer;
+    private Sprite myElementSprite;
+
+    void Awake()
+    {
+        myRenderer = GetComponent<SpriteRenderer>();
+    }
+
+    public void Initialize(Sprite elementSprite)
+    {
+        myElementSprite = elementSprite;
+
+        if (myRenderer == null)
+        {
+            myRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        if (myRenderer != null)
+        {
+            myRenderer.sprite = myElementSprite;
+            myRenderer.color = Color.white;
+        }
+    }
 
     void OnCollisionEnter2D(Collision2D collision)
     {
@@ -30,7 +53,7 @@ public class BombLogic : MonoBehaviour
     void Explode()
     {
         hasExploded = true;
-        Color myColor = GetComponent<SpriteRenderer>().color;
+        Sprite spriteToPass = (myElementSprite != null) ? myElementSprite : myRenderer.sprite;
 
         // 고유 번호 발급
         int myBatchId = globalBatchIdCounter++;
@@ -45,8 +68,15 @@ public class BombLogic : MonoBehaviour
             float randomScale = Random.Range(minSize, maxSize);
             grain.transform.localScale = new Vector3(randomScale, randomScale, 1f);
 
-            // 색상 및 태그 설정
-            grain.GetComponent<SpriteRenderer>().color = myColor;
+            // 이미지 설정
+            SpriteRenderer grainRenderer = grain.GetComponent<SpriteRenderer>();
+            if (grainRenderer != null)
+            {
+                grainRenderer.sprite = spriteToPass;
+                grainRenderer.color = Color.white;
+            }
+
+            // 태그 설정
             grain.tag = "Stack";
 
             // ID 부여

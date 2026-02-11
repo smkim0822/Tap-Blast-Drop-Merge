@@ -3118,7 +3118,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &968155873
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3345,7 +3345,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1024946515
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3901,11 +3901,11 @@ MonoBehaviour:
   bombPrefab: {fileID: 8619092646198070267, guid: d29662b69e4d37148837ab3fd8e20eeb, type: 3}
   xLimit: 1.7
   cooldownTime: 0.5
-  bombColors:
-  - {r: 1, g: 0, b: 0, a: 1}
-  - {r: 0, g: 1, b: 0, a: 1}
-  - {r: 0, g: 0, b: 1, a: 1}
-  - {r: 1, g: 1, b: 0, a: 1}
+  elementSprites:
+  - {fileID: 21300000, guid: 0ac9b84899cedb34e94b2b2588b4c3f6, type: 3}
+  - {fileID: 21300000, guid: fdfeb5886238af542907490a9c583057, type: 3}
+  - {fileID: 21300000, guid: 1a109ce0eea0856449c0ace0b3ad65c2, type: 3}
+  - {fileID: 21300000, guid: d2c85d7e938cb0a4bab82754311d7462, type: 3}
   nextBombUIs:
   - {fileID: 419252551}
   - {fileID: 914144075}

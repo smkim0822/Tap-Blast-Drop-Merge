@@ -40,8 +40,8 @@ public class GrainLogic : MonoBehaviour
             // 상대방도 이미 파괴 중이면 무시 (중복 점수 방지)
             if (otherGrain.isDestroying) return;
 
-            // 색상 비교
-            if (IsColorMatch(myRenderer.color, otherGrain.GetComponent<SpriteRenderer>().color))
+            // 이미지 비교
+            if (IsSpriteMatch(myRenderer, otherGrain.GetComponent<SpriteRenderer>()))
             {
                 // 출신 비교
                 if (this.batchId != otherGrain.batchId)
@@ -87,7 +87,7 @@ public class GrainLogic : MonoBehaviour
 
             var main = ps.main;
 
-            main.startColor = myRenderer.color;
+            main.startColor = Color.white;
             Destroy(ps.gameObject, main.startLifetime.constantMax + 0.1f);
         }
 
@@ -103,9 +103,6 @@ public class GrainLogic : MonoBehaviour
             {
                 // 텍스트 설정
                 floatingText.SetText("+" + finalScore, Color.yellow);
-
-                // 공 색 동기화
-                floatingText.SetText("+" + finalScore,  myRenderer.color);
             }
         }
 
@@ -155,8 +152,9 @@ public class GrainLogic : MonoBehaviour
         Destroy(gameObject);
     }
 
-    bool IsColorMatch(Color c1, Color c2)
+    bool IsSpriteMatch(SpriteRenderer r1, SpriteRenderer r2)
     {
-        return (Mathf.Abs(c1.r - c2.r) + Mathf.Abs(c1.g - c2.g) + Mathf.Abs(c1.b - c2.b)) < 0.1f;
+        if (r1 == null || r2 == null) return false;
+        return r1.sprite == r2.sprite;
     }
 }
