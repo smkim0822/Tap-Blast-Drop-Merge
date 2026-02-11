@@ -41,6 +41,18 @@ public class Spawner : MonoBehaviour
     [Tooltip("점선 간격 조절")]
     public float lineTextureScale = 1;
 
+    [Header("Animation Settings (Falling Bomb)")]
+    public AnimationCurve spawnCurve;
+    public float spawnDuration = 0.3f;
+
+    [Header("Animation Settings (Spawner Reload)")]
+    public AnimationCurve spawnerLoadCurve;
+    public float spawnerLoadDuration = 0.3f;
+
+    [Header("Animation Settings (UI)")]
+    public AnimationCurve uiPunchCurve;
+    public float uiAnimDuration = 0.2f;
+
     private Camera mainCam;
     private bool isDragging = false;
     private bool isReloading = false;
@@ -162,6 +174,12 @@ public class Spawner : MonoBehaviour
         {
             GameObject newBomb = Instantiate(bombPrefab, transform.position, Quaternion.identity);
 
+            Vector3 realScale = newBomb.transform.localScale;
+
+            newBomb.transform.localScale = Vector3.zero;
+
+            StartCoroutine(AnimateSpawn(newBomb.transform, realScale));
+
             BombLogic bombLogic = newBomb.GetComponent<BombLogic>();
             
             if (bombLogic != null)
@@ -230,6 +248,8 @@ public class Spawner : MonoBehaviour
         {
             spawnerRenderer.sprite = currentElement.sprite;
             spawnerRenderer.color = Color.white;
+
+            StartCoroutine(AnimateSpawnerReload());
         }
 
         // UI 업데이트
@@ -242,19 +262,21 @@ public class Spawner : MonoBehaviour
                 Color uiColor = Color.white;
 
                 bool isNextBomb = (i == nextElements.Count - 1);
+                float targetScale = 0.8f;
 
                 if (isNextBomb)
                 {
                     uiColor.a = 1.0f;
-                    nextBombUIs[i].transform.localScale = Vector3.one * 1.2f;
+                    targetScale = 1.2f;
                 }
                 else
                 {
                     uiColor.a = 0.5f;
-                    nextBombUIs[i].transform.localScale = Vector3.one * 0.8f;
                 }
                 
                 nextBombUIs[i].color = uiColor;
+
+                StartCoroutine(AnimateUI(nextBombUIs[i].rectTransform, targetScale));
             }
         }
     }
@@ -275,5 +297,77 @@ public class Spawner : MonoBehaviour
         // 3. 폭탄 초기화
         InitializeQueue();
         PrepareNextBomb();
+    }
+
+    IEnumerator AnimateSpawn(Transform target, Vector3 targetScale)
+    {
+        float timer = 0f;
+
+        while (timer < spawnDuration)
+        {
+            timer += Time.deltaTime;
+            float progress = timer / spawnDuration;
+
+            float curveValue = spawnCurve.Evaluate(progress);
+
+            if (target != null)
+            {
+                target.localScale = targetScale * curveValue;
+            }
+
+            yield return null;
+        }
+
+        if (target != null)
+        {
+            target.localScale = targetScale;
+        }
+    }
+
+    IEnumerator AnimateSpawnerReload()
+    {
+        float timer = 0f;
+        Vector3 targetScale = transform.localScale;
+
+        transform.localScale = Vector3.zero;
+
+        while (timer < spawnerLoadDuration)
+        {
+            timer += Time.deltaTime;
+            float progress = timer / spawnerLoadDuration;
+
+            float curveValue = spawnerLoadCurve.Evaluate(progress);
+
+            transform.localScale = targetScale * curveValue;
+            yield return null;
+        }
+
+        transform.localScale = targetScale;
+    }
+
+    IEnumerator AnimateUI(RectTransform target, float baseScale)
+    {
+        float timer = 0f;
+        Vector3 baseScaleVec = Vector3.one * baseScale;
+
+        while (timer < uiAnimDuration)
+        {
+            timer += Time.deltaTime;
+            float progress = timer / uiAnimDuration;
+
+            float curveValue = uiPunchCurve.Evaluate(progress);
+
+            if (target != null)
+            {
+                target.localScale = baseScaleVec * curveValue;
+            }
+
+            yield return null;
+        }
+
+        if (target != null)
+        {
+            target.localScale = baseScaleVec;
+        }
     }
 }
