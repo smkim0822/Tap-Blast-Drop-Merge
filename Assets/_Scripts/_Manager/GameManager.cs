@@ -45,6 +45,15 @@ public class GameManager : MonoBehaviour
         gameOverPanel.gameObject.SetActive(false);
         gamePlayGroup.SetActive(true);
         gamePlayUI.SetActive(true);
+
+        if (player != null)
+        {
+            Spawner s = player.GetComponent<Spawner>();
+            if (s != null)
+            {
+                s.ResetSpawner();
+            }
+        }
     }
 
     // 데이터 초기화
@@ -87,22 +96,19 @@ public class GameManager : MonoBehaviour
         }
 
         // 5. 플레이어 상태 리셋
-        if (player != null)
+    if (player != null)
+    {
+        player.SetActive(true); // 1. 일단 플레이어를 먼저 켠다
+        
+        // 시작 위치로 이동
+        if (playerStartPos != null) player.transform.position = playerStartPos.position;
+
+        Spawner spawnerScript = player.GetComponent<Spawner>();
+        if (spawnerScript != null)
         {
-            Spawner spawnerScript = player.GetComponent<Spawner>();
-            if (spawnerScript != null)
-            {
-                spawnerScript.ResetSpawner();
-            }
-            else
-            {
-                player.SetActive(true);
-                if (playerStartPos != null)
-                {
-                    player.transform.position = playerStartPos.position;
-                }
-            }
+            spawnerScript.ResetSpawner(); // 2. 그 다음 리셋을 시킨다
         }
+    }
     }
 
     // 버튼 함수

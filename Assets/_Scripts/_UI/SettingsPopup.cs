@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 public class SettingsPopup : MonoBehaviour
 {
@@ -21,29 +22,76 @@ public class SettingsPopup : MonoBehaviour
     [SerializeField] private Sprite musicOnSprite;
     [SerializeField] private Sprite musicOffSprite;
 
+    [Header("Animation Settings")]
+    [SerializeField] private RectTransform popupWindow;
+    [SerializeField] private AnimationCurve openCurve;
+    [SerializeField] private float animDuration = 0.2f;
+
     private bool isSoundOn = true;
     private bool isMusicOn = true;
+    private bool isAnimating = false;
 
-    private void Awake()
+    // 팝업을 열 때 호출 (외부에서 사용)
+    public void Open(bool isIngame)
     {
-        // soundButton.onClick.AddListener(OnClickSound);
-        // musicButton.onClick.AddListener(OnClickMusic);
-        // retryButton.onClick.AddListener(OnClickRetry);
-        // mainButton.onClick.AddListener(OnClickMain);
-    }
+        if (isAnimating) return;
 
-    private void OnEnable()
-    {
-        // 팝업 켜질 때 설정 불러오고 UI 갱신
+        gameObject.SetActive(true);
+        SetMode(isIngame);
         LoadSettings();
         UpdateUI();
 
-        Time.timeScale = 0f; // 일시정지
+        StartCoroutine(AnimateOpen());
     }
 
-    private void OnDisable()
+    // --- 애니메이션 로직 ---
+    
+    IEnumerator AnimateOpen()
     {
-        Time.timeScale = 1f; // 재개
+        isAnimating = true;
+        Time.timeScale = 0f;
+
+        float timer = 0f;
+        popupWindow.localScale = Vector3.zero;
+
+        while (timer < animDuration)
+        {
+            timer += Time.unscaledDeltaTime;
+            float progress = timer / animDuration;
+            float curveValue = openCurve.Evaluate(progress);
+
+            popupWindow.localScale = new Vector3(curveValue, curveValue, 1f);
+
+            yield return null;
+        }
+
+        popupWindow.localScale = Vector3.one;
+        isAnimating = false;
+    }
+
+    IEnumerator AnimateClose()
+    {
+        isAnimating = true;
+
+        float timer = 0f;
+        Vector3 startScale = popupWindow.localScale;
+
+        while (timer < animDuration)
+        {
+            timer += Time.unscaledDeltaTime;
+            float progress = timer / animDuration;
+
+            // 점점 작아짐
+            popupWindow.localScale = Vector3.Lerp(startScale, Vector3.zero, progress);
+            yield return null;
+        }
+
+        popupWindow.localScale = Vector3.zero;
+        isAnimating = false;
+
+        // 애니메이션 완료 후 게임 재개 및 비활성화
+        Time.timeScale = 1f;
+        gameObject.SetActive(false);
     }
 
     // --- 버튼 기능 ---
@@ -66,25 +114,25 @@ public class SettingsPopup : MonoBehaviour
 
     public void OnClickRetry()
     {
-        // 1. 팝업 닫기
-        this.gameObject.SetActive(false);
-        
-        // 2. 게임 매니저에게 '재시작' 명령 (리셋 + 게임시작)
+        Time.timeScale = 1f;
         GameManager.Instance.RetryGame();
+        gameObject.SetActive(false);
     }
 
     public void OnClickMain()
     {
-        // 1. 팝업 닫기
-        this.gameObject.SetActive(false);
-
-        // 2. 게임 매니저에게 '메인으로' 명령 (리셋 + 메인이동)
+        Time.timeScale = 1f;
         GameManager.Instance.GoToMain();
+        gameObject.SetActive(false);
     }
 
     public void OnClickClose()
     {
-        this.gameObject.SetActive(false);
+        if (isAnimating)
+        {
+            return;
+        }
+        StartCoroutine(AnimateClose());
     }
 
     // --- 내부 로직 ---

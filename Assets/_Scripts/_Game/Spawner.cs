@@ -60,6 +60,16 @@ public class Spawner : MonoBehaviour
     private SpriteRenderer spawnerRenderer;
     private ElementData currentElement;
     private List<ElementData> nextElements = new List<ElementData>();
+    private Vector3 originalScale;
+
+    void Awake()
+    {
+        originalScale = transform.localScale;
+        if (originalScale == Vector3.zero)
+        {
+            originalScale = Vector3.one;
+        }
+    }
 
     void Start()
     {
@@ -284,20 +294,69 @@ public class Spawner : MonoBehaviour
     // 초기화
     public void ResetSpawner()
     {
-        // 1. 위치 초기화
-        transform.position = new Vector3(0, transform.position.y, 0);
+        // 1. 모든 동작 중단
+        StopAllCoroutines();
 
         // 2. 상태 초기화
-        StopAllCoroutines();
         isDragging = false;
         isReloading = false;
+        if (spawnerRenderer == null)
+        {
+            spawnerRenderer = GetComponent<SpriteRenderer>();
+        }
         spawnerRenderer.enabled = true;
-        guideLine.enabled = false;
+        if (guideLine != null)
+        {
+            guideLine.enabled = false;
+        }
 
-        // 3. 폭탄 초기화
+        // 3. 위치 초기화 및 크기 복구
+        transform.position = new Vector3(0, transform.position.y, 0);
+        transform.localScale = originalScale;
+
+        // 4. 데이터 초기화
+        nextElements.Clear();
         InitializeQueue();
-        PrepareNextBomb();
+
+        // 5. 현재 폭탄 세팅
+        int lastIndex = nextElements.Count - 1;
+        currentElement = nextElements[lastIndex];
+        nextElements.RemoveAt(lastIndex);
+        nextElements.Insert(0, PickRandomElement());
+
+        // 6. 시각적 업데이트
+        ForceUpdateVisuals();
     }
+
+    // 리셋 전용: 애니메이션 없이 즉시 스프라이트와 UI를 적용하는 함수 추가
+    private void ForceUpdateVisuals()
+{
+    if (spawnerRenderer == null) spawnerRenderer = GetComponent<SpriteRenderer>();
+    
+    if (spawnerRenderer != null)
+    {
+        spawnerRenderer.sprite = currentElement.sprite;
+        spawnerRenderer.color = Color.white;
+        spawnerRenderer.enabled = true; // 확실히 켜줌
+    }
+
+    // 애니메이션이고 뭐고 일단 무조건 보이게 1(originalScale)로 고정
+    transform.localScale = originalScale;
+
+    // UI 업데이트 (생략하지 말고 그대로 두세요)
+    for (int i = 0; i < nextBombUIs.Length; i++)
+    {
+        if (i < nextElements.Count)
+        {
+            nextBombUIs[i].sprite = nextElements[i].sprite;
+            bool isNextBomb = (i == nextElements.Count - 1);
+            Color uiColor = Color.white;
+            uiColor.a = isNextBomb ? 1.0f : 0.5f;
+            nextBombUIs[i].color = uiColor;
+            nextBombUIs[i].rectTransform.localScale = Vector3.one * (isNextBomb ? 1.2f : 0.8f);
+        }
+    }
+}
 
     IEnumerator AnimateSpawn(Transform target, Vector3 targetScale)
     {
@@ -327,7 +386,7 @@ public class Spawner : MonoBehaviour
     IEnumerator AnimateSpawnerReload()
     {
         float timer = 0f;
-        Vector3 targetScale = transform.localScale;
+        Vector3 targetScale = originalScale;
 
         transform.localScale = Vector3.zero;
 

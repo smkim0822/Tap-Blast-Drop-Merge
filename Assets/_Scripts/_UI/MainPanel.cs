@@ -34,14 +34,10 @@ public class MainPanel : MonoBehaviour
     {
         if (settingsPopup != null)
         {
-            // 1. 팝업 활성화
-            settingsPopup.SetActive(true);
-
-            // 2. 메인 화면 모드로 설정
             SettingsPopup popupScript = settingsPopup.GetComponent<SettingsPopup>();
             if (popupScript != null)
             {
-                popupScript.SetMode(false);
+                popupScript.Open(false);
             }
         }
         else
