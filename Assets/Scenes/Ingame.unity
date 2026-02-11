@@ -2521,7 +2521,7 @@ GameObject:
   - component: {fileID: 822299132}
   m_Layer: 0
   m_Name: Right Wall
-  m_TagString: Wall
+  m_TagString: Undefined
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3901,11 +3901,19 @@ MonoBehaviour:
   bombPrefab: {fileID: 8619092646198070267, guid: d29662b69e4d37148837ab3fd8e20eeb, type: 3}
   xLimit: 1.7
   cooldownTime: 0.5
-  elementSprites:
-  - {fileID: 21300000, guid: 0ac9b84899cedb34e94b2b2588b4c3f6, type: 3}
-  - {fileID: 21300000, guid: fdfeb5886238af542907490a9c583057, type: 3}
-  - {fileID: 21300000, guid: 1a109ce0eea0856449c0ace0b3ad65c2, type: 3}
-  - {fileID: 21300000, guid: d2c85d7e938cb0a4bab82754311d7462, type: 3}
+  elements:
+  - name: Fire
+    sprite: {fileID: 21300000, guid: 0ac9b84899cedb34e94b2b2588b4c3f6, type: 3}
+    color: {r: 0.8235294, g: 0.3019608, b: 0.17254902, a: 1}
+  - name: Ground
+    sprite: {fileID: 21300000, guid: 1a109ce0eea0856449c0ace0b3ad65c2, type: 3}
+    color: {r: 0.77254903, g: 0.5921569, b: 0.43137255, a: 1}
+  - name: thunder
+    sprite: {fileID: 21300000, guid: d2c85d7e938cb0a4bab82754311d7462, type: 3}
+    color: {r: 0.98039216, g: 0.8980392, b: 0.627451, a: 1}
+  - name: Water
+    sprite: {fileID: 21300000, guid: fdfeb5886238af542907490a9c583057, type: 3}
+    color: {r: 0.4745098, g: 0.9254902, b: 0.9411765, a: 1}
   nextBombUIs:
   - {fileID: 419252551}
   - {fileID: 914144075}
@@ -4994,7 +5002,7 @@ GameObject:
   - component: {fileID: 1523993846}
   m_Layer: 0
   m_Name: Left Wall
-  m_TagString: Wall
+  m_TagString: Undefined
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

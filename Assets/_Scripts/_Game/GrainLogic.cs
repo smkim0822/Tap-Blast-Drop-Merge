@@ -22,9 +22,16 @@ public class GrainLogic : MonoBehaviour
 
     private SpriteRenderer myRenderer;
     private bool isDestroying = false;  // 중복 파괴 방지 플래그
+    private Color effectColor = Color.white;
 
     void Start(){
         myRenderer = GetComponent<SpriteRenderer>();
+    }
+
+    public void SetupGrain(int id, Color color)
+    {
+        batchId = id;
+        effectColor = color;
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -87,7 +94,7 @@ public class GrainLogic : MonoBehaviour
 
             var main = ps.main;
 
-            main.startColor = Color.white;
+            main.startColor = effectColor;
             Destroy(ps.gameObject, main.startLifetime.constantMax + 0.1f);
         }
 
@@ -102,7 +109,7 @@ public class GrainLogic : MonoBehaviour
             if (floatingText != null)
             {
                 // 텍스트 설정
-                floatingText.SetText("+" + finalScore, Color.yellow);
+                floatingText.SetText("+" + finalScore, effectColor);
             }
         }
 

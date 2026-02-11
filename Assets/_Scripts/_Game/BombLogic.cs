@@ -17,15 +17,17 @@ public class BombLogic : MonoBehaviour
     private bool hasExploded = false;
     private SpriteRenderer myRenderer;
     private Sprite myElementSprite;
+    private Color myEffectColor = Color.white;
 
     void Awake()
     {
         myRenderer = GetComponent<SpriteRenderer>();
     }
 
-    public void Initialize(Sprite elementSprite)
+    public void Initialize(Sprite elementSprite, Color effectColor)
     {
         myElementSprite = elementSprite;
+        myEffectColor = effectColor;
 
         if (myRenderer == null)
         {
@@ -80,7 +82,7 @@ public class BombLogic : MonoBehaviour
             grain.tag = "Stack";
 
             // ID 부여
-            grain.GetComponent<GrainLogic>().batchId = myBatchId;
+            grain.GetComponent<GrainLogic>().SetupGrain(myBatchId, myEffectColor);
 
             // 퍼지는 힘
             Rigidbody2D rb = grain.GetComponent<Rigidbody2D>();

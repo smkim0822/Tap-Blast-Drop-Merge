@@ -76,7 +76,17 @@ public class GameManager : MonoBehaviour
             Destroy(bomb.gameObject);
         }
 
-        // 4. 플레이어 상태 리셋
+        // 4. 이펙트 제거
+        GameObject[] effects = GameObject.FindGameObjectsWithTag("Effect");
+        if (effects != null)
+        {
+            foreach (GameObject effect in effects)
+            {
+                Destroy(effect);
+            }
+        }
+
+        // 5. 플레이어 상태 리셋
         if (player != null)
         {
             Spawner spawnerScript = player.GetComponent<Spawner>();

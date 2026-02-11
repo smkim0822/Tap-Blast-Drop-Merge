@@ -6,6 +6,14 @@ using System.Collections.Generic;
 
 public class Spawner : MonoBehaviour
 {
+    [System.Serializable]
+    public struct ElementData
+    {
+        public string name;
+        public Sprite sprite;
+        public Color color;
+    }
+
     [Header("Settings")]
     [Tooltip("생성할 폭탄 프리팹")]
     public GameObject bombPrefab;
@@ -16,8 +24,8 @@ public class Spawner : MonoBehaviour
     [Tooltip("재장전 시간")]
     public float cooldownTime = 0.5f;
 
-    [Header("Sprites")]
-    public Sprite[] elementSprites;
+    [Header("Elements")]
+    public ElementData[] elements;
 
     [Header("UI References")]
     [Tooltip("다음 폭탄 색상 UI 이미지")]
@@ -38,9 +46,8 @@ public class Spawner : MonoBehaviour
     private bool isReloading = false;
 
     private SpriteRenderer spawnerRenderer;
-
-    private Sprite currentSprite;
-    private List<Sprite> nextSprites = new List<Sprite>();        // 다음 스프라이트
+    private ElementData currentElement;
+    private List<ElementData> nextElements = new List<ElementData>();
 
     void Start()
     {
@@ -142,8 +149,10 @@ public class Spawner : MonoBehaviour
         float distance = Vector3.Distance(transform.position, endPos);
         guideLine.material.mainTextureScale = new Vector2(distance * lineTextureScale, 1);
 
-        guideLine.startColor = new Color(1, 1, 1, 1f);
-        guideLine.endColor = new Color(1, 1, 1, 0.3f);
+        Color guideColor = currentElement.color;
+        guideLine.startColor = guideColor;
+        guideColor.a = 0.3f;
+        guideLine.endColor = guideColor;
     }
 
     IEnumerator DropBombRoutine()
@@ -157,7 +166,7 @@ public class Spawner : MonoBehaviour
             
             if (bombLogic != null)
             {
-                bombLogic.Initialize(currentSprite);
+                bombLogic.Initialize(currentElement.sprite, currentElement.color);
             }
         }
 
@@ -178,39 +187,40 @@ public class Spawner : MonoBehaviour
     // 대기열 3개 채우기
     void InitializeQueue()
     {
-        nextSprites.Clear();
+        nextElements.Clear();
         for (int i = 0; i < nextBombUIs.Length; i++)
         {
-            nextSprites.Add(PickRandomSprite());
+            nextElements.Add(PickRandomElement());
         }
     }
 
     // 다음 폭탄을 현재 폭탄으로 가져오고, 새로운 다음 폭탄을 뽑는 함수
     void PrepareNextBomb()
     {
-        if (nextSprites.Count == 0)
+        if (nextElements.Count == 0)
         {
             InitializeQueue();
         }
-        int lastIndex = nextSprites.Count - 1;
-        currentSprite = nextSprites[lastIndex];
 
-        nextSprites.RemoveAt(lastIndex);
+        int lastIndex = nextElements.Count - 1;
+        currentElement = nextElements[lastIndex];
 
-        nextSprites.Insert(0, PickRandomSprite());
+        nextElements.RemoveAt(lastIndex);
+
+        nextElements.Insert(0, PickRandomElement());
 
         // 시각적 업데이트
         UpdateVisuals();
     }
 
-    Sprite PickRandomSprite()
+    ElementData PickRandomElement()
     {
-        if (elementSprites.Length > 0)
+        if (elements.Length > 0)
         {
-            int randomIndex = Random.Range(0, elementSprites.Length);
-            return elementSprites[randomIndex];
+            int randomIndex = Random.Range(0, elements.Length);
+            return elements[randomIndex];
         }
-        return null;
+        return new ElementData();
     }
 
     void UpdateVisuals()
@@ -218,20 +228,20 @@ public class Spawner : MonoBehaviour
         // 스포너 이미지 변경
         if (spawnerRenderer != null)
         {
-            spawnerRenderer.sprite = currentSprite;
+            spawnerRenderer.sprite = currentElement.sprite;
             spawnerRenderer.color = Color.white;
         }
 
         // UI 업데이트
         for (int i = 0; i < nextBombUIs.Length; i++)
         {
-            if (i < nextSprites.Count)
+            if (i < nextElements.Count)
             {
-                nextBombUIs[i].sprite = nextSprites[i];
+                nextBombUIs[i].sprite = nextElements[i].sprite;
 
                 Color uiColor = Color.white;
 
-                bool isNextBomb = (i == nextSprites.Count - 1);
+                bool isNextBomb = (i == nextElements.Count - 1);
 
                 if (isNextBomb)
                 {
