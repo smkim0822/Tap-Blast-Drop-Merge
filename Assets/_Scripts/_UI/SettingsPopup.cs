@@ -99,7 +99,12 @@ public class SettingsPopup : MonoBehaviour
     public void OnClickSound()
     {
         isSoundOn = !isSoundOn;
-        // TODO: SoundManager.Instance.MuteSFX(!isSoundOn);
+
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.SetSoundMute(!isSoundOn);
+        }
+
         SaveSettings();
         UpdateUI();
     }
@@ -107,7 +112,12 @@ public class SettingsPopup : MonoBehaviour
     public void OnClickMusic()
     {
         isMusicOn = !isMusicOn;
-        // TODO: SoundManager.Instance.MuteBGM(!isMusicOn);
+
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.SetMusicMute(!isMusicOn);
+        }
+        
         SaveSettings();
         UpdateUI();
     }

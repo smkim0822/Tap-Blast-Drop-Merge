@@ -81,7 +81,10 @@ public class GrainLogic : MonoBehaviour
         // 사운드 재생
         if (popSound != null)
         {
-            AudioSource.PlayClipAtPoint(popSound, transform.position, 1.0f);
+            if (SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlaySFX(popSound, 1.0f);
+            }
         }
 
         // 진동
