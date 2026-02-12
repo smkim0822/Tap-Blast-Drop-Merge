@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 
@@ -10,3 +11,4 @@ public class DevMenu : MonoBehaviour
         Debug.Log("최고 기록 초기화.");
     }
 }
+#endif
