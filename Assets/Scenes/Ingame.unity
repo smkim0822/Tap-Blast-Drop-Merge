@@ -3613,7 +3613,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bombPrefab: {fileID: 8619092646198070267, guid: d29662b69e4d37148837ab3fd8e20eeb, type: 3}
-  xLimit: 1.7
+  xLimit: 2
   cooldownTime: 0.5
   elements:
   - name: Fire

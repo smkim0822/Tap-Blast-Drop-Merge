@@ -19,7 +19,7 @@ public class Spawner : MonoBehaviour
     public GameObject bombPrefab;
 
     [Tooltip("화면 좌우 이동 제한 범위 (X축)")]
-    public float xLimit = 1.6f;
+    public float xLimit = 2.0f; // [수정됨] 1.6 -> 2.0로 확장 (벽 위치 고려)
 
     [Tooltip("재장전 시간")]
     public float cooldownTime = 0.5f;
@@ -86,8 +86,7 @@ public class Spawner : MonoBehaviour
 
         guideLine.textureMode = LineTextureMode.Tile;
 
-        // 표시선이 테두리 위로 보이는 문제
-        // 표시선을 강제로 맨 뒤로 보냄
+        // 표시선이 테두리 위로 보이는 문제 방지
         guideLine.sortingOrder = -10;
 
         // 게임 시작 시 초기화
@@ -294,10 +293,8 @@ public class Spawner : MonoBehaviour
     // 초기화
     public void ResetSpawner()
     {
-        // 1. 모든 동작 중단
         StopAllCoroutines();
 
-        // 2. 상태 초기화
         isDragging = false;
         isReloading = false;
         if (spawnerRenderer == null)
@@ -310,97 +307,74 @@ public class Spawner : MonoBehaviour
             guideLine.enabled = false;
         }
 
-        // 3. 위치 초기화 및 크기 복구
         transform.position = new Vector3(0, transform.position.y, 0);
         transform.localScale = originalScale;
 
-        // 4. 데이터 초기화
         nextElements.Clear();
         InitializeQueue();
 
-        // 5. 현재 폭탄 세팅
         int lastIndex = nextElements.Count - 1;
         currentElement = nextElements[lastIndex];
         nextElements.RemoveAt(lastIndex);
         nextElements.Insert(0, PickRandomElement());
 
-        // 6. 시각적 업데이트
         ForceUpdateVisuals();
     }
 
-    // 리셋 전용: 애니메이션 없이 즉시 스프라이트와 UI를 적용하는 함수 추가
     private void ForceUpdateVisuals()
-{
-    if (spawnerRenderer == null) spawnerRenderer = GetComponent<SpriteRenderer>();
-    
-    if (spawnerRenderer != null)
     {
-        spawnerRenderer.sprite = currentElement.sprite;
-        spawnerRenderer.color = Color.white;
-        spawnerRenderer.enabled = true; // 확실히 켜줌
-    }
-
-    // 애니메이션이고 뭐고 일단 무조건 보이게 1(originalScale)로 고정
-    transform.localScale = originalScale;
-
-    // UI 업데이트 (생략하지 말고 그대로 두세요)
-    for (int i = 0; i < nextBombUIs.Length; i++)
-    {
-        if (i < nextElements.Count)
+        if (spawnerRenderer == null) spawnerRenderer = GetComponent<SpriteRenderer>();
+        
+        if (spawnerRenderer != null)
         {
-            nextBombUIs[i].sprite = nextElements[i].sprite;
-            bool isNextBomb = (i == nextElements.Count - 1);
-            Color uiColor = Color.white;
-            uiColor.a = isNextBomb ? 1.0f : 0.5f;
-            nextBombUIs[i].color = uiColor;
-            nextBombUIs[i].rectTransform.localScale = Vector3.one * (isNextBomb ? 1.2f : 0.8f);
+            spawnerRenderer.sprite = currentElement.sprite;
+            spawnerRenderer.color = Color.white;
+            spawnerRenderer.enabled = true;
+        }
+
+        transform.localScale = originalScale;
+
+        for (int i = 0; i < nextBombUIs.Length; i++)
+        {
+            if (i < nextElements.Count)
+            {
+                nextBombUIs[i].sprite = nextElements[i].sprite;
+                bool isNextBomb = (i == nextElements.Count - 1);
+                Color uiColor = Color.white;
+                uiColor.a = isNextBomb ? 1.0f : 0.5f;
+                nextBombUIs[i].color = uiColor;
+                nextBombUIs[i].rectTransform.localScale = Vector3.one * (isNextBomb ? 1.2f : 0.8f);
+            }
         }
     }
-}
 
     IEnumerator AnimateSpawn(Transform target, Vector3 targetScale)
     {
         float timer = 0f;
-
         while (timer < spawnDuration)
         {
             timer += Time.deltaTime;
             float progress = timer / spawnDuration;
-
             float curveValue = spawnCurve.Evaluate(progress);
-
-            if (target != null)
-            {
-                target.localScale = targetScale * curveValue;
-            }
-
+            if (target != null) target.localScale = targetScale * curveValue;
             yield return null;
         }
-
-        if (target != null)
-        {
-            target.localScale = targetScale;
-        }
+        if (target != null) target.localScale = targetScale;
     }
 
     IEnumerator AnimateSpawnerReload()
     {
         float timer = 0f;
         Vector3 targetScale = originalScale;
-
         transform.localScale = Vector3.zero;
-
         while (timer < spawnerLoadDuration)
         {
             timer += Time.deltaTime;
             float progress = timer / spawnerLoadDuration;
-
             float curveValue = spawnerLoadCurve.Evaluate(progress);
-
             transform.localScale = targetScale * curveValue;
             yield return null;
         }
-
         transform.localScale = targetScale;
     }
 
@@ -408,25 +382,14 @@ public class Spawner : MonoBehaviour
     {
         float timer = 0f;
         Vector3 baseScaleVec = Vector3.one * baseScale;
-
         while (timer < uiAnimDuration)
         {
             timer += Time.deltaTime;
             float progress = timer / uiAnimDuration;
-
             float curveValue = uiPunchCurve.Evaluate(progress);
-
-            if (target != null)
-            {
-                target.localScale = baseScaleVec * curveValue;
-            }
-
+            if (target != null) target.localScale = baseScaleVec * curveValue;
             yield return null;
         }
-
-        if (target != null)
-        {
-            target.localScale = baseScaleVec;
-        }
+        if (target != null) target.localScale = baseScaleVec;
     }
 }

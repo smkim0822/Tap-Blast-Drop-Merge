@@ -11,8 +11,14 @@ public class BombLogic : MonoBehaviour
     public float minSize = 0.1f;    // 최소 크기
     public float maxSize = 0.6f;    // 최대 크기
 
-    // 폭탄 번호
+    // 폭탄 번호 (static이라서 게임 꺼도 유지됨 -> 초기화 필요)
     public static int globalBatchIdCounter = 0;
+
+    // 배치 ID 초기화 함수 (GameManager에서 호출)
+    public static void ResetBatchId()
+    {
+        globalBatchIdCounter = 0;
+    }
 
     private bool hasExploded = false;
     private SpriteRenderer myRenderer;

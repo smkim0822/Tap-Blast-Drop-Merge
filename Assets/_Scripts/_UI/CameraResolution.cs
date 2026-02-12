@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CameraResolution : MonoBehaviour
 {
-    void Start() // Awake 대신 Start 사용 (화면 크기 인식 안정화)
+    private void Awake()
     {
         Camera cam = GetComponent<Camera>();
 
@@ -12,35 +12,22 @@ public class CameraResolution : MonoBehaviour
         // 2. 현재 기기 비율
         float windowAspect = (float)Screen.width / Screen.height;
 
-        // 3. 비율 계산
-        float scaleHeight = windowAspect / targetAspect;
+        // 3. 비율에 따른 카메라 사이즈 보정
+        // (기존 Size 5를 기준으로 계산)
+        float initialSize = 5f;
 
-        Rect rect = cam.rect;
-
-        // 오차 범위(0.001)를 두어 거의 같으면 그냥 꽉 채움
-        if (Mathf.Abs(scaleHeight - 1.0f) < 0.001f)
+        if (windowAspect < targetAspect) 
         {
-            rect.width = 1.0f;
-            rect.height = 1.0f;
-            rect.x = 0;
-            rect.y = 0;
+            // 화면이 더 홀쭉함 (길쭉한 폰) -> 너비를 맞추기 위해 카메라를 뒤로 뺌(Size 증가)
+            cam.orthographicSize = initialSize * (targetAspect / windowAspect);
         }
-        else if (scaleHeight < 1.0f) // 세로로 더 긴 경우 (레터박스 위아래)
+        else
         {
-            rect.width = 1.0f;
-            rect.height = scaleHeight;
-            rect.x = 0;
-            rect.y = (1.0f - scaleHeight) / 2.0f;
-        }
-        else // 가로로 더 넓은 경우 (레터박스 좌우 - 필러박스)
-        {
-            float scaleWidth = 1.0f / scaleHeight;
-            rect.width = scaleWidth;
-            rect.height = 1.0f;
-            rect.x = (1.0f - scaleWidth) / 2.0f;
-            rect.y = 0;
+            // 화면이 더 넓음 (태블릿) -> 높이를 5로 고정하면 너비가 넓어짐 (커버가 보임)
+            cam.orthographicSize = initialSize;
         }
 
-        cam.rect = rect;
+        // 4. Viewport Rect는 항상 전체 화면 사용 (잔상 문제 해결)
+        cam.rect = new Rect(0, 0, 1, 1);
     }
 }

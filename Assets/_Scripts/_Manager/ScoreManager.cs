@@ -22,6 +22,8 @@ public class ScoreManager : MonoBehaviour
 
     private Vector3 originalScale;
     private Vector3 bestScoreOriginalScale;
+    private Color bestScoreOriginalColor = Color.white; // 최고 점수 원래 색상 저장용
+
     private Coroutine punchCoroutine;
     private Coroutine bestPunchCoroutine;
 
@@ -30,7 +32,7 @@ public class ScoreManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
-        // 시작 시 원래 크기를 미리 저장
+        // 시작 시 원래 크기/색상을 미리 저장
         if (currentScoreText != null)
         {
             originalScale = currentScoreText.transform.localScale;
@@ -38,6 +40,7 @@ public class ScoreManager : MonoBehaviour
         if (bestScoreText != null)
         {
             bestScoreOriginalScale = bestScoreText.transform.localScale;
+            bestScoreOriginalColor = bestScoreText.color; // 원래 색 저장 (보통 흰색)
         }
     }
 
@@ -64,38 +67,26 @@ public class ScoreManager : MonoBehaviour
 
         UpdateUI();
 
-        // 현재 점수 펀치 애니메이션
-        if (punchCoroutine != null)
-        {
-            StopCoroutine(punchCoroutine);
-        }
-        punchCoroutine = StartCoroutine(CoPunchText(currentScoreText, originalScale, punchScale));
+        // 1. 현재 점수 펀치 (크기만)
+        if (punchCoroutine != null) StopCoroutine(punchCoroutine);
+        punchCoroutine = StartCoroutine(CoPunchScaleOnly(currentScoreText, originalScale, punchScale));
 
-        // 최고 점수 펀치 애니메이션
+        // 2. 최고 점수 처리
         if (isNewRecord)
         {
-            if (bestPunchCoroutine != null)
-            {
-                StopCoroutine(bestPunchCoroutine);
-            }
-            
-            bestPunchCoroutine = StartCoroutine(CoPunchText(bestScoreText, bestScoreOriginalScale, bestPunchScale, Color.yellow));
+            // 신기록이면 색상을 노란색으로 영구 변경 (이번 게임 동안)
+            if (bestScoreText != null) bestScoreText.color = Color.yellow;
+
+            // 펀치 애니메이션 (크기만)
+            if (bestPunchCoroutine != null) StopCoroutine(bestPunchCoroutine);
+            bestPunchCoroutine = StartCoroutine(CoPunchScaleOnly(bestScoreText, bestScoreOriginalScale, bestPunchScale));
         }
     }
 
-    IEnumerator CoPunchText(TextMeshProUGUI targetText, Vector3 baseScale, float scaleMult, Color? flashColor = null)
+    // 색상은 건드리지 않고 크기만 튕기는 코루틴
+    IEnumerator CoPunchScaleOnly(TextMeshProUGUI targetText, Vector3 baseScale, float scaleMult)
     {
-        if (targetText == null)
-        {
-            yield break;
-        }
-
-        Color originalColor = targetText.color;
-        targetText.transform.localScale = baseScale * scaleMult;
-        if (flashColor.HasValue)
-        {
-            targetText.color = flashColor.Value;
-        }
+        if (targetText == null) yield break;
 
         float elapsed = 0f;
         while (elapsed < duration)
@@ -103,26 +94,35 @@ public class ScoreManager : MonoBehaviour
             elapsed += Time.deltaTime;
             float percent = elapsed / duration;
 
-            // Lerp를 사용하여 부드럽게 보간
+            // 커졌다가 작아짐
             targetText.transform.localScale = Vector3.Lerp(baseScale * scaleMult, baseScale, percent);
-
-            if (flashColor.HasValue)
-            {
-                targetText.color = Color.Lerp(flashColor.Value, originalColor, percent);
-            }
 
             yield return null;
         }
 
-        // 3. 마지막에 정확한 크기로 고정
+        // 정확한 크기 복구
         targetText.transform.localScale = baseScale;
-        targetText.color = originalColor;
     }
 
-    // 점수 초기화
+    // 점수 초기화 (재시작 시 호출됨)
     public void ResetScore()
     {
         currentScore = 0;
+        
+        // 코루틴 모두 중단
+        StopAllCoroutines();
+
+        // UI 즉시 원상복구 (크기 및 색상)
+        if (currentScoreText != null) 
+        {
+            currentScoreText.transform.localScale = originalScale;
+        }
+        if (bestScoreText != null) 
+        {
+            bestScoreText.transform.localScale = bestScoreOriginalScale;
+            bestScoreText.color = bestScoreOriginalColor; // 여기서 원래 색(흰색)으로 돌아옴!
+        }
+
         UpdateUI();
     }
 
