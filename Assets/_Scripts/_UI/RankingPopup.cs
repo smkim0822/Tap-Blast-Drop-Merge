@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
+using System.Collections;
 
 public class RankingPopup : MonoBehaviour
 {
@@ -13,10 +14,16 @@ public class RankingPopup : MonoBehaviour
     public TextMeshProUGUI myRankText;
     public TextMeshProUGUI myScoreText;
 
+    [Header("Animation Settings")]
+    [SerializeField] private RectTransform popupWindow;
+    [SerializeField] private AnimationCurve openCurve;
+    [SerializeField] private float animDuration = 0.2f;
+
+    private bool isAnimating = false;
+
     // 테스트용 더미 데이터
     private void OnEnable()
     {
-        RefreshRanking();
     }
 
     public void RefreshRanking()
@@ -44,31 +51,71 @@ public class RankingPopup : MonoBehaviour
 
     void UpdateMyRankUI()
     {
-        // 저장된 최고 점수 가져오기
         int bestScore = PlayerPrefs.GetInt("BestScore", 0);
-
         myNameText.text = "Me";
         myScoreText.text = bestScore.ToString("N0");
 
-        // 순위 임의 처리
-        if (bestScore == 0)
-        {
-            myRankText.text = "-";
-        }
-        else
-        {
-            myRankText.text = "999+";
-        }
+        if (bestScore == 0) myRankText.text = "-";
+        else myRankText.text = "999+";
     }
+
+    // --- 애니메이션 로직 (SettingsPopup에서 이식) ---
 
     public void OpenPopup()
     {
+        if (isAnimating) return;
+
         gameObject.SetActive(true);
-        RefreshRanking();
+        RefreshRanking(); // 데이터 먼저 세팅
+        StartCoroutine(AnimateOpen());
     }
 
     public void ClosePopup()
     {
+        if (isAnimating) return;
+        StartCoroutine(AnimateClose());
+    }
+
+    IEnumerator AnimateOpen()
+    {
+        isAnimating = true;
+
+        float timer = 0f;
+        popupWindow.localScale = Vector3.zero;
+
+        while (timer < animDuration)
+        {
+            timer += Time.unscaledDeltaTime;
+            float progress = timer / animDuration;
+            float curveValue = openCurve.Evaluate(progress);
+
+            popupWindow.localScale = new Vector3(curveValue, curveValue, 1f);
+            yield return null;
+        }
+
+        popupWindow.localScale = Vector3.one;
+        isAnimating = false;
+    }
+
+    IEnumerator AnimateClose()
+    {
+        isAnimating = true;
+
+        float timer = 0f;
+        Vector3 startScale = popupWindow.localScale;
+
+        while (timer < animDuration)
+        {
+            timer += Time.unscaledDeltaTime;
+            float progress = timer / animDuration;
+
+            popupWindow.localScale = Vector3.Lerp(startScale, Vector3.zero, progress);
+            yield return null;
+        }
+
+        popupWindow.localScale = Vector3.zero;
+        isAnimating = false;
+
         gameObject.SetActive(false);
     }
 }
