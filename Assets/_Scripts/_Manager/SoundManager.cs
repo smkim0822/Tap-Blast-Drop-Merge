@@ -1,19 +1,26 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class SoundManager : MonoBehaviour
 {
     public static SoundManager Instance;
 
     [Header("Audio Sources")]
-    [SerializeField] private AudioSource bgmSource;     // 배경음
-    [SerializeField] private AudioSource sfxSource;     // 효과음
+    [SerializeField] private AudioSource bgmSource;
+    [SerializeField] private AudioSource sfxSource;
+
+    [Header("Settings")]
+    [SerializeField] private float minSoundInterval = 0.05f; // 같은 소리 반복 재생 방지 시간 (0.05초)
+    [SerializeField] private bool usePitchVariation = true;  // 피치 랜덤 사용 여부
 
     private bool isSoundOn = true;
     private bool isMusicOn = true;
 
+    // 마지막으로 소리가 재생된 시간을 기록 (Key: 오디오클립, Value: 시간)
+    private Dictionary<AudioClip, float> lastPlayedTimes = new Dictionary<AudioClip, float>();
+
     void Awake()
     {
-        // 싱글톤 패턴
         if (Instance == null)
         {
             Instance = this;
@@ -29,11 +36,9 @@ public class SoundManager : MonoBehaviour
 
     private void InitializeSettings()
     {
-        // 저장된 설정 불러오기
         isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
         isMusicOn = PlayerPrefs.GetInt("MusicOn", 1) == 1;
 
-        // 배경음 초기 상태 적용
         if (bgmSource != null)
         {
             bgmSource.mute = !isMusicOn;
@@ -46,24 +51,43 @@ public class SoundManager : MonoBehaviour
 
     // --- 외부 호출용 메서드 ---
 
-    // 효과음 재생 (GrainLogic에서 호출)
     public void PlaySFX(AudioClip clip, float volume = 1.0f)
     {
-        if (!isSoundOn || clip == null || sfxSource == null)
+        // 1. 기본 체크
+        if (!isSoundOn || clip == null || sfxSource == null) return;
+
+        // 2. 쿨타임 체크
+        if (lastPlayedTimes.ContainsKey(clip))
         {
-            return;
+            float lastTime = lastPlayedTimes[clip];
+            if (Time.time - lastTime < minSoundInterval)
+            {
+                return;
+            }
         }
 
+        // 3. 재생 시간 갱신
+        lastPlayedTimes[clip] = Time.time;
+
+        // 4. 피치 랜덤 변화 (기계음 방지)
+        if (usePitchVariation)
+        {
+            sfxSource.pitch = Random.Range(0.9f, 1.1f);
+        }
+        else
+        {
+            sfxSource.pitch = 1.0f;
+        }
+
+        // 5. 재생
         sfxSource.PlayOneShot(clip, volume);
     }
 
-    // 설정 팝업에서 호출: 효과음 ON/OFF 토글
     public void SetSoundMute(bool isMute)
     {
         isSoundOn = !isMute;
     }
 
-    // 설정 팝업에서 호출: 배경음 ON/OFF 토글
     public void SetMusicMute(bool isMute)
     {
         isMusicOn = !isMute;
@@ -72,5 +96,4 @@ public class SoundManager : MonoBehaviour
             bgmSource.mute = isMute;
         }
     }
-
 }

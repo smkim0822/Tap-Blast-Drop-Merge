@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
+using System.Collections;
 
 public class RankingPopup : MonoBehaviour
 {
@@ -13,10 +14,36 @@ public class RankingPopup : MonoBehaviour
     public TextMeshProUGUI myRankText;
     public TextMeshProUGUI myScoreText;
 
+    [Header("Animation Settings")]
+    [SerializeField] private RectTransform popupWindow;
+    [SerializeField] private AnimationCurve openCurve;
+    [SerializeField] private float animDuration = 0.2f;
+
+    private bool isAnimating = false;
+
     private void OnEnable()
     {
-        // 팝업이 켜질 때마다 서버에서 데이터를 가져옴
-        RefreshRanking();
+        if (!isAnimating)
+        {
+            RefreshRanking();
+        }
+    }
+
+    // 외부에서 팝업을 열 때 이 함수를 호출 (애니메이션 + 데이터 로드)
+
+    public void OpenPopup()
+    {
+        if (isAnimating) return;
+
+        gameObject.SetActive(true);
+        RefreshRanking(); // 데이터 로드
+        StartCoroutine(AnimateOpen());
+    }
+
+    public void ClosePopup()
+    {
+        if (isAnimating) return;
+        StartCoroutine(AnimateClose());
     }
 
     public void RefreshRanking()
@@ -28,8 +55,11 @@ public class RankingPopup : MonoBehaviour
         }
 
         // 2. 서버에 요청 보내기 (비동기)
-        // "데이터 다 가져오면 OnDataReceived 함수를 실행해줘!" 라고 부탁함
-        StartCoroutine(RankingManager.Instance.GetRanks(OnDataReceived));
+        // 싱글톤 인스턴스 확인 후 호출
+        if (RankingManager.Instance != null)
+        {
+            StartCoroutine(RankingManager.Instance.GetRanks(OnDataReceived));
+        }
     }
 
     // 서버에서 데이터가 도착하면 실행되는 함수
@@ -61,20 +91,52 @@ public class RankingPopup : MonoBehaviour
         myNameText.text = myName;
         myScoreText.text = bestScore.ToString("N0");
 
-        // (심화) 만약 서버 랭킹에 내가 있다면 내 등수를 표시해줄 수도 있음
-        // 지금은 일단 간단하게 처리
         if (bestScore == 0) myRankText.text = "-";
         else myRankText.text = "?"; // 전체 랭킹 밖이면 ?로 표시
     }
 
-    public void OpenPopup()
+    // --- 애니메이션 로직 ---
+
+    IEnumerator AnimateOpen()
     {
-        gameObject.SetActive(true);
-        // OnEnable이 자동으로 호출되어 랭킹을 갱신함
+        isAnimating = true;
+
+        float timer = 0f;
+        popupWindow.localScale = Vector3.zero;
+
+        while (timer < animDuration)
+        {
+            timer += Time.unscaledDeltaTime;
+            float progress = timer / animDuration;
+            float curveValue = openCurve.Evaluate(progress);
+
+            popupWindow.localScale = new Vector3(curveValue, curveValue, 1f);
+            yield return null;
+        }
+
+        popupWindow.localScale = Vector3.one;
+        isAnimating = false;
     }
 
-    public void ClosePopup()
+    IEnumerator AnimateClose()
     {
+        isAnimating = true;
+
+        float timer = 0f;
+        Vector3 startScale = popupWindow.localScale;
+
+        while (timer < animDuration)
+        {
+            timer += Time.unscaledDeltaTime;
+            float progress = timer / animDuration;
+
+            popupWindow.localScale = Vector3.Lerp(startScale, Vector3.zero, progress);
+            yield return null;
+        }
+
+        popupWindow.localScale = Vector3.zero;
+        isAnimating = false;
+
         gameObject.SetActive(false);
     }
 }
