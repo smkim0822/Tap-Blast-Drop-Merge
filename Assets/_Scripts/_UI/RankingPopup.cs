@@ -21,9 +21,35 @@ public class RankingPopup : MonoBehaviour
 
     private bool isAnimating = false;
 
-    // 테스트용 더미 데이터
     private void OnEnable()
     {
+        if (!isAnimating)
+        {
+            RefreshRanking();
+        }
+    }
+
+    // 외부에서 팝업을 열 때 이 함수를 호출 (애니메이션 + 데이터 로드)
+
+    public void OpenPopup()
+    {
+        if (isAnimating) return;
+
+        gameObject.SetActive(true);
+
+        if (RankingManager.Instance != null)
+        {
+            StartCoroutine(RankingManager.Instance.CheckServerStatus());
+        }
+        
+        RefreshRanking(); // 데이터 로드
+        StartCoroutine(AnimateOpen());
+    }
+
+    public void ClosePopup()
+    {
+        if (isAnimating) return;
+        StartCoroutine(AnimateClose());
     }
 
     public void RefreshRanking()
@@ -34,47 +60,47 @@ public class RankingPopup : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        // 2. 더미 데이터 20개 생성
-        for (int i = 0; i < 20; i++)
+        // 2. 서버 연결 확인 후 데이터 요청
+        if (RankingManager.Instance != null)
+        {
+            StartCoroutine(RankingManager.Instance.GetRanks(OnDataReceived));
+        }
+    }
+
+    // 서버에서 데이터가 도착하면 실행되는 함수
+    void OnDataReceived(ScoreData[] ranks)
+    {
+        // 데이터가 없으면 리턴
+        if (ranks == null || ranks.Length == 0) return;
+
+        // 3. 받아온 데이터로 리스트 만들기
+        for (int i = 0; i < ranks.Length; i++)
         {
             int rank = i + 1;
-            int score = 50000 - (i * 1234);
-            string playerName = $"Player {Random.Range(100, 999)}";
+            string playerName = ranks[i].name;
+            int score = ranks[i].score;
 
             RankingItem newItem = Instantiate(itemPrefab, contentParent);
             newItem.SetData(rank, playerName, score);
         }
 
-        // 3. 내 순위 정보 업데이트
+        // 4. 내 순위 정보 업데이트 (로컬 정보 기반)
         UpdateMyRankUI();
     }
 
     void UpdateMyRankUI()
     {
         int bestScore = PlayerPrefs.GetInt("BestScore", 0);
-        myNameText.text = "Me";
+        string myName = "Me"; // 나중에 닉네임 입력 기능 넣으면 PlayerPrefs로 변경
+
+        myNameText.text = myName;
         myScoreText.text = bestScore.ToString("N0");
 
         if (bestScore == 0) myRankText.text = "-";
-        else myRankText.text = "999+";
+        else myRankText.text = "?"; // 전체 랭킹 밖이면 ?로 표시
     }
 
-    // --- 애니메이션 로직 (SettingsPopup에서 이식) ---
-
-    public void OpenPopup()
-    {
-        if (isAnimating) return;
-
-        gameObject.SetActive(true);
-        RefreshRanking(); // 데이터 먼저 세팅
-        StartCoroutine(AnimateOpen());
-    }
-
-    public void ClosePopup()
-    {
-        if (isAnimating) return;
-        StartCoroutine(AnimateClose());
-    }
+    // --- 애니메이션 로직 ---
 
     IEnumerator AnimateOpen()
     {
