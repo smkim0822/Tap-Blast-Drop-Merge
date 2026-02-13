@@ -36,6 +36,12 @@ public class RankingPopup : MonoBehaviour
         if (isAnimating) return;
 
         gameObject.SetActive(true);
+
+        if (RankingManager.Instance != null)
+        {
+            StartCoroutine(RankingManager.Instance.CheckServerStatus());
+        }
+        
         RefreshRanking(); // 데이터 로드
         StartCoroutine(AnimateOpen());
     }
@@ -48,14 +54,13 @@ public class RankingPopup : MonoBehaviour
 
     public void RefreshRanking()
     {
-        // 1. 기존 리스트 초기화 (깨끗하게 비우기)
+        // 1. 기존 리스트 초기화
         foreach (Transform child in contentParent)
         {
             Destroy(child.gameObject);
         }
 
-        // 2. 서버에 요청 보내기 (비동기)
-        // 싱글톤 인스턴스 확인 후 호출
+        // 2. 서버 연결 확인 후 데이터 요청
         if (RankingManager.Instance != null)
         {
             StartCoroutine(RankingManager.Instance.GetRanks(OnDataReceived));

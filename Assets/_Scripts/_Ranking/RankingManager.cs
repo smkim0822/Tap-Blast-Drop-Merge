@@ -16,6 +16,7 @@ public class ScoreData
 public class RankingManager : MonoBehaviour
 {
     public static RankingManager Instance; // 어디서든 부를 수 있게 싱글톤 처리
+    public bool IsServerAlive { get; private set; } = false;
 
     private const string BASE_URL = "http://localhost:8080/api";
     private const string SECRET_KEY = "UnityMergeGameSecretKey2026!"; 
@@ -24,6 +25,11 @@ public class RankingManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+    }
+
+    void Start()
+    {
+        StartCoroutine(CheckServerStatus());
     }
 
     // [기능 1] 점수 저장
@@ -61,6 +67,7 @@ public class RankingManager : MonoBehaviour
     public IEnumerator GetRanks(Action<ScoreData[]> onCallback)
     {
         UnityWebRequest request = UnityWebRequest.Get(BASE_URL + "/ranks");
+        request.timeout = 5;
 
         yield return request.SendWebRequest();
 
@@ -71,12 +78,12 @@ public class RankingManager : MonoBehaviour
             // JSON 데이터를 배열로 변환
             ScoreData[] ranks = JsonHelper.FromJson<ScoreData>(jsonResult);
 
-            // UI에게 "다 됐어! 가져가!" 하고 알려줌
+            // UI에게 알림
             if (onCallback != null) onCallback(ranks);
         }
         else
         {
-            Debug.LogError("❌ 랭킹 조회 실패: " + request.error);
+            Debug.LogError($"<color=yellow>❌ 랭킹 조회 실패!</color> 에러: {request.error} | 결과: {request.result}");
         }
     }
 
@@ -89,5 +96,28 @@ public class RankingManager : MonoBehaviour
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < hashBytes.Length; i++) builder.Append(hashBytes[i].ToString("x2"));
         return builder.ToString();
+    }
+
+    // 게임 시작 시 혹은 팝업을 열기 전 호출하여 서버 상태 갱신
+    public IEnumerator CheckServerStatus()
+    {
+        using (UnityWebRequest request = UnityWebRequest.Get(BASE_URL + "/health"))
+        {
+            // 서버 응답 대기 시간 설정
+            request.timeout = 3;
+
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success && request.downloadHandler.text == "ok")
+            {
+                IsServerAlive = true;
+                Debug.Log("<color=green>🌐 서버 연결 성공: 상태 정상</color>");
+            }
+            else
+            {
+                IsServerAlive = false;
+                Debug.LogWarning("<color=red>🌐 서버 연결 실패: 서버가 꺼져 있거나 주소가 잘못되었습니다.</color>");
+            }
+        }
     }
 }
