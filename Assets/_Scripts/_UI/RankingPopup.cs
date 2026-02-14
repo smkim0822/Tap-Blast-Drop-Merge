@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Collections;
 
@@ -14,12 +15,35 @@ public class RankingPopup : MonoBehaviour
     public TextMeshProUGUI myRankText;
     public TextMeshProUGUI myScoreText;
 
+    [Header("Nickname Edit UI")]
+    public Button editNameButton;       // 연필 모양 혹은 수정 버튼
+    public GameObject editPopupPanel;   // 수정할 때 뜨는 작은 창(패널)
+    public TMP_InputField nameInput;    // 새로운 이름을 입력할 곳
+    public Button saveNameButton;       // 저장 버튼
+    public Button cancelNameButton;     // 취소 버튼
+
     [Header("Animation Settings")]
     [SerializeField] private RectTransform popupWindow;
     [SerializeField] private AnimationCurve openCurve;
     [SerializeField] private float animDuration = 0.2f;
 
     private bool isAnimating = false;
+
+    private void Start()
+    {
+        if (editNameButton != null)
+            editNameButton.onClick.AddListener(OpenEditNamePopup);
+
+        if (saveNameButton != null)
+            saveNameButton.onClick.AddListener(SaveNewNickname);
+
+        if (cancelNameButton != null)
+            cancelNameButton.onClick.AddListener(CloseEditNamePopup);
+
+        // 수정 팝업은 처음에 꺼둠
+        if (editPopupPanel != null)
+            editPopupPanel.SetActive(false);
+    }
 
     private void OnEnable()
     {
@@ -28,8 +52,6 @@ public class RankingPopup : MonoBehaviour
             RefreshRanking();
         }
     }
-
-    // 외부에서 팝업을 열 때 이 함수를 호출 (애니메이션 + 데이터 로드)
 
     public void OpenPopup()
     {
@@ -42,7 +64,7 @@ public class RankingPopup : MonoBehaviour
             StartCoroutine(RankingManager.Instance.CheckServerStatus());
         }
         
-        RefreshRanking(); // 데이터 로드
+        RefreshRanking();
         StartCoroutine(AnimateOpen());
     }
 
@@ -54,26 +76,21 @@ public class RankingPopup : MonoBehaviour
 
     public void RefreshRanking()
     {
-        // 1. 기존 리스트 초기화
         foreach (Transform child in contentParent)
         {
             Destroy(child.gameObject);
         }
 
-        // 2. 서버 연결 확인 후 데이터 요청
         if (RankingManager.Instance != null)
         {
             StartCoroutine(RankingManager.Instance.GetRanks(OnDataReceived));
         }
     }
 
-    // 서버에서 데이터가 도착하면 실행되는 함수
     void OnDataReceived(ScoreData[] ranks)
     {
-        // 데이터가 없으면 리턴
         if (ranks == null || ranks.Length == 0) return;
 
-        // 3. 받아온 데이터로 리스트 만들기
         for (int i = 0; i < ranks.Length; i++)
         {
             int rank = i + 1;
@@ -84,20 +101,59 @@ public class RankingPopup : MonoBehaviour
             newItem.SetData(rank, playerName, score);
         }
 
-        // 4. 내 순위 정보 업데이트 (로컬 정보 기반)
         UpdateMyRankUI();
     }
 
+    // NicknameManager를 사용하여 실제 닉네임 표시
     void UpdateMyRankUI()
     {
         int bestScore = PlayerPrefs.GetInt("BestScore", 0);
-        string myName = "Me"; // 나중에 닉네임 입력 기능 넣으면 PlayerPrefs로 변경
+        
+        string myName = NicknameManager.Instance != null 
+                        ? NicknameManager.Instance.GetNickname() 
+                        : "Guest";
 
         myNameText.text = myName;
         myScoreText.text = bestScore.ToString("N0");
 
         if (bestScore == 0) myRankText.text = "-";
-        else myRankText.text = "?"; // 전체 랭킹 밖이면 ?로 표시
+        else myRankText.text = "?";
+    }
+
+    // --- 닉네임 수정 로직 ---
+
+    private void OpenEditNamePopup()
+    {
+        if (editPopupPanel != null)
+        {
+            editPopupPanel.SetActive(true);
+            // 입력창에 현재 닉네임을 미리 적어줌
+            if (NicknameManager.Instance != null)
+                nameInput.text = NicknameManager.Instance.GetNickname();
+        }
+    }
+
+    private void CloseEditNamePopup()
+    {
+        if (editPopupPanel != null)
+            editPopupPanel.SetActive(false);
+    }
+
+    private void SaveNewNickname()
+    {
+        if (nameInput == null) return;
+
+        string newName = nameInput.text;
+
+        // 매니저를 통해 저장 (매니저 내부에서 유효성 검사 수행함)
+        if (NicknameManager.Instance != null)
+        {
+            NicknameManager.Instance.SetNickname(newName);
+        }
+
+        // UI 즉시 갱신 및 팝업 닫기
+        UpdateMyRankUI();
+        CloseEditNamePopup();
     }
 
     // --- 애니메이션 로직 ---
