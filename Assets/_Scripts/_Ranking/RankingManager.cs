@@ -3,11 +3,12 @@ using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
-using System; // Action을 쓰기 위해 필요
+using System;
 
 [System.Serializable]
 public class ScoreData
 {
+    public string uuid;
     public string name;
     public int score;
     public string hash;
@@ -20,6 +21,7 @@ public class RankingManager : MonoBehaviour
 
     private const string BASE_URL = "http://localhost:8080/api";
     private const string SECRET_KEY = "UnityMergeGameSecretKey2026!"; 
+    private const string UUID_KEY = "PlayerUUID";
 
     void Awake()
     {
@@ -32,13 +34,31 @@ public class RankingManager : MonoBehaviour
         StartCoroutine(CheckServerStatus());
     }
 
+    private string GetOrCreateUUID()
+    {
+        string uuid = PlayerPrefs.GetString(UUID_KEY, "");
+
+        if (string.IsNullOrEmpty(uuid))
+        {
+            uuid = Guid.NewGuid().ToString();
+            PlayerPrefs.SetString(UUID_KEY, uuid);
+            PlayerPrefs.Save();
+            Debug.Log($"<color=cyan>✨ 새 UUID 생성 및 저장됨: {uuid}</color>");
+        }
+
+        return uuid;
+    }
+
     // [기능 1] 점수 저장
     public IEnumerator PostScore(int score)
     {
         string playerName = PlayerPrefs.GetString("PlayerName", "Guest");
-        string hash = GenerateHash(playerName, score);
+        string playerUUID = GetOrCreateUUID();
+
+        string hash = GenerateHash(playerName, score, playerUUID);
 
         ScoreData data = new ScoreData();
+        data.uuid = playerUUID;
         data.name = playerName;
         data.score = score;
         data.hash = hash;
@@ -87,9 +107,9 @@ public class RankingManager : MonoBehaviour
         }
     }
 
-    private string GenerateHash(string name, int score)
+    private string GenerateHash(string name, int score, string uuid)
     {
-        string input = name + score + SECRET_KEY;
+        string input = name + score + uuid + SECRET_KEY;
         SHA256 sha256 = SHA256.Create();
         byte[] bytes = Encoding.UTF8.GetBytes(input);
         byte[] hashBytes = sha256.ComputeHash(bytes);
