@@ -157,12 +157,7 @@ public class GameManager : MonoBehaviour
         // ==========================================
         if (RankingManager.Instance != null)
         {
-            // 1. 임시 닉네임 생성 (나중에 입력창 만들면 그걸로 교체)
-            // 예: Player 4821
-            string tempName = "Player " + UnityEngine.Random.Range(1000, 9999);
-
-            // 2. 서버로 전송 (비동기라 게임 멈춰도 백그라운드에서 날아감)
-            StartCoroutine(RankingManager.Instance.PostScore(tempName, current));
+            StartCoroutine(RankingManager.Instance.PostScore(current));
         }
         // ==========================================
 
