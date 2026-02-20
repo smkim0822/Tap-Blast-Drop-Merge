@@ -33,8 +33,9 @@ public class RankingManager : MonoBehaviour
     }
 
     // [기능 1] 점수 저장
-    public IEnumerator PostScore(string playerName, int score)
+    public IEnumerator PostScore(int score)
     {
+        string playerName = PlayerPrefs.GetString("PlayerName", "Guest");
         string hash = GenerateHash(playerName, score);
 
         ScoreData data = new ScoreData();
@@ -55,7 +56,6 @@ public class RankingManager : MonoBehaviour
         if (request.result == UnityWebRequest.Result.Success)
         {
             Debug.Log("✅ 점수 저장 성공!");
-            // 저장이 끝나면 자동으로 랭킹 갱신 요청은 안 함 (UI가 알아서 할 것)
         }
         else
         {
