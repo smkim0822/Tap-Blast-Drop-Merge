@@ -1,7 +1,6 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
-using System.Collections.Generic;
 using System.Collections;
 
 public class RankingPopup : MonoBehaviour
@@ -76,19 +75,23 @@ public class RankingPopup : MonoBehaviour
 
     public void RefreshRanking()
     {
-        foreach (Transform child in contentParent)
-        {
-            Destroy(child.gameObject);
-        }
-
         if (RankingManager.Instance != null)
         {
+            // 1. 전체 리스트 (Top 50) 호출
             StartCoroutine(RankingManager.Instance.GetRanks(OnDataReceived));
+            
+            // 2. 내 랭킹 단건 호출
+            StartCoroutine(RankingManager.Instance.GetMyRank(OnMyRankReceived));
         }
     }
 
     void OnDataReceived(ScoreData[] ranks)
     {
+        foreach (Transform child in contentParent)
+        {
+            Destroy(child.gameObject);
+        }
+        
         if (ranks == null || ranks.Length == 0) return;
 
         for (int i = 0; i < ranks.Length; i++)
@@ -100,8 +103,25 @@ public class RankingPopup : MonoBehaviour
             RankingItem newItem = Instantiate(itemPrefab, contentParent);
             newItem.SetData(rank, playerName, score);
         }
+    }
 
-        UpdateMyRankUI();
+    void OnMyRankReceived(MyRankData myData)
+    {
+        if (myData == null)
+        {
+            // 기록이 아예 없는 유저
+            string currentName = PlayerPrefs.GetString("PlayerName", "Guest");
+            myNameText.text = currentName;
+            myRankText.text = "-";
+            myScoreText.text = "0";
+        }
+        else
+        {
+            // 정상적으로 받아온 유저
+            myNameText.text = myData.name;
+            myRankText.text = myData.rank.ToString();
+            myScoreText.text = myData.score.ToString("N0");
+        }
     }
 
     // NicknameManager를 사용하여 실제 닉네임 표시
