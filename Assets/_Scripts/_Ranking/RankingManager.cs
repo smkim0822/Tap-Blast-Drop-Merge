@@ -63,7 +63,6 @@ public class RankingManager : MonoBehaviour
     {
         string playerName = PlayerPrefs.GetString("PlayerName", "Guest");
         string playerUUID = GetOrCreateUUID();
-
         string hash = GenerateHash(playerName, score, playerUUID);
 
         ScoreData data = new ScoreData();
@@ -74,7 +73,7 @@ public class RankingManager : MonoBehaviour
 
         string json = JsonUtility.ToJson(data);
 
-        UnityWebRequest request = new UnityWebRequest(BASE_URL + "/scores", "POST");
+        UnityWebRequest request = new UnityWebRequest(BASE_URL + "/rankings", "POST");
         byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
@@ -95,7 +94,7 @@ public class RankingManager : MonoBehaviour
     // Top 50 랭킹 조회
     public IEnumerator GetRanks(Action<ScoreData[]> onCallback)
     {
-        UnityWebRequest request = UnityWebRequest.Get(BASE_URL + "/ranks");
+        UnityWebRequest request = UnityWebRequest.Get(BASE_URL + "/rankings");
         request.timeout = 5;
         yield return request.SendWebRequest();
 
