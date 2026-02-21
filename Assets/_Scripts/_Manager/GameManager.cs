@@ -128,7 +128,7 @@ public class GameManager : MonoBehaviour
         EnterMainState(); // 메인 화면 이동
     }
 
-    // 게임 오버 (여기가 핵심!)
+    // 게임 오버
     public void TriggerGameOver()
     {
         Time.timeScale = 0; // 정지
@@ -138,12 +138,11 @@ public class GameManager : MonoBehaviour
         // Invoke 대신 Realtime 코루틴 시작
         StartCoroutine(EnableRetryRoutine());
 
-        // 점수 가져오기
+        // 점수 저장 및 갱신
         int current = ScoreManager.Instance.GetCurrentScore();
         int best = PlayerPrefs.GetInt("BestScore", 0);
         bool isNewRecord = false;
 
-        // 로컬 최고 기록 갱신 (내 폰에 저장)
         if (current > best)
         {
             best = current;
@@ -151,15 +150,6 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.Save();
             isNewRecord = true;
         }
-
-        // ==========================================
-        // 🔥 [서버 연동 추가] 서버로 점수 전송 🔥
-        // ==========================================
-        if (RankingManager.Instance != null)
-        {
-            StartCoroutine(RankingManager.Instance.PostScore(current));
-        }
-        // ==========================================
 
         if (gamePlayUI != null)
         {
