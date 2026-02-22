@@ -24,12 +24,25 @@ public class MyRankData
 
 public class RankingManager : MonoBehaviour
 {
-    public static RankingManager Instance; // 어디서든 부를 수 있게 싱글톤 처리
-    public bool IsServerAlive { get; private set; } = false;
+    public static RankingManager Instance;
+    public ServerConfig config;
 
-    private const string BASE_URL = "http://localhost:8080/api";
-    private const string SECRET_KEY = "UnityMergeGameSecretKey2026!"; 
+    public bool IsServerAlive { get; private set; } = false;
     private const string UUID_KEY = "PlayerUUID";
+
+    private string BaseUrl
+    {
+        get
+        {
+// #if UNITY_EDITOR
+//             return "http://localhost:8080/api";
+// #else
+            return $"http://{config.oracleIp}:8080/api";
+// #endif
+        }
+    }
+
+    private string SecretKey => config.secretKey;
 
     void Awake()
     {
@@ -73,7 +86,7 @@ public class RankingManager : MonoBehaviour
 
         string json = JsonUtility.ToJson(data);
 
-        UnityWebRequest request = new UnityWebRequest(BASE_URL + "/rankings", "POST");
+        UnityWebRequest request = new UnityWebRequest(BaseUrl + "/rankings", "POST");
         byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
@@ -94,7 +107,7 @@ public class RankingManager : MonoBehaviour
     // Top 50 랭킹 조회
     public IEnumerator GetRanks(Action<ScoreData[]> onCallback)
     {
-        UnityWebRequest request = UnityWebRequest.Get(BASE_URL + "/rankings");
+        UnityWebRequest request = UnityWebRequest.Get(BaseUrl + "/rankings");
         request.timeout = 5;
         yield return request.SendWebRequest();
 
@@ -114,7 +127,7 @@ public class RankingManager : MonoBehaviour
     public IEnumerator GetMyRank(Action<MyRankData> onCallback)
     {
         string uuid = GetOrCreateUUID();
-        UnityWebRequest request = UnityWebRequest.Get(BASE_URL + "/rankings/" + uuid);
+        UnityWebRequest request = UnityWebRequest.Get(BaseUrl + "/rankings/" + uuid);
         request.timeout = 5;
         yield return request.SendWebRequest();
 
@@ -141,7 +154,10 @@ public class RankingManager : MonoBehaviour
 
     private string GenerateHash(string name, int score, string uuid)
     {
-        string input = name + score + uuid + SECRET_KEY;
+        string input = $"{name}:{score}:{uuid}:{SecretKey}";
+
+        Debug.Log($"유니티 원본 문자열: [{input}]");
+
         using (SHA256 sha256 = SHA256.Create())
         {
             byte[] bytes = Encoding.UTF8.GetBytes(input);
@@ -155,7 +171,7 @@ public class RankingManager : MonoBehaviour
     // 게임 시작 시 혹은 팝업을 열기 전 호출하여 서버 상태 갱신
     public IEnumerator CheckServerStatus()
     {
-        using (UnityWebRequest request = UnityWebRequest.Get(BASE_URL + "/health"))
+        using (UnityWebRequest request = UnityWebRequest.Get(BaseUrl + "/health"))
         {
             request.timeout = 3;
             yield return request.SendWebRequest();
