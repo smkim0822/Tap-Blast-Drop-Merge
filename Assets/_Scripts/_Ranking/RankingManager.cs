@@ -25,7 +25,9 @@ public class MyRankData
 public class RankingManager : MonoBehaviour
 {
     public static RankingManager Instance;
-    public ServerConfig config;
+
+    private ServerConfig config;
+    private bool isConfigMissing = false;
 
     public bool IsServerAlive { get; private set; } = false;
     private const string UUID_KEY = "PlayerUUID";
@@ -34,6 +36,9 @@ public class RankingManager : MonoBehaviour
     {
         get
         {
+            if (isConfigMissing || config == null){
+                return "http://localhost:8080/api";
+            }
 // #if UNITY_EDITOR
 //             return "http://localhost:8080/api";
 // #else
@@ -42,17 +47,38 @@ public class RankingManager : MonoBehaviour
         }
     }
 
-    private string SecretKey => config.secretKey;
+    private string SecretKey
+    {
+        get
+        {
+            if (isConfigMissing || config == null) return "dummy_secret_key";
+            return config.secretKey;
+        }
+    }
 
     void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+
+        LoadServerConfig();
     }
 
     void Start()
     {
         StartCoroutine(CheckServerStatus());
+    }
+
+    private void LoadServerConfig(){
+        config = Resources.Load<ServerConfig>("ServerConfig");
+
+        if (config == null){
+            isConfigMissing = true;
+            Debug.LogWarning("⚠️ [RankingManager] Resources/ServerConfig.asset 파일을 찾을 수 없습니다! 로컬 더미 설정으로 실행됩니다.");
+        }
+        else {
+            isConfigMissing = false;
+        }
     }
 
     // UUID 획득 로직
@@ -74,6 +100,11 @@ public class RankingManager : MonoBehaviour
     // 점수 저장
     public IEnumerator PostScore(int score)
     {
+        if (isConfigMissing){
+            Debug.LogWarning("⚠️ [RankingManager] ServerConfig 누락으로 점수 저장 요청을 스킵합니다.");
+            yield break;
+        }
+
         string playerName = PlayerPrefs.GetString("PlayerName", "Guest");
         string playerUUID = GetOrCreateUUID();
         string hash = GenerateHash(playerName, score, playerUUID);
@@ -107,6 +138,11 @@ public class RankingManager : MonoBehaviour
     // Top 50 랭킹 조회
     public IEnumerator GetRanks(Action<ScoreData[]> onCallback)
     {
+        if (isConfigMissing){
+            Debug.LogWarning("⚠️ [RankingManager] ServerConfig 누락으로 랭킹 조회를 스킵합니다.");
+            if (onCallback != null) onCallback(new ScoreData[0]);
+            yield break;
+        }
         UnityWebRequest request = UnityWebRequest.Get(BaseUrl + "/rankings");
         request.timeout = 5;
         yield return request.SendWebRequest();
@@ -126,6 +162,12 @@ public class RankingManager : MonoBehaviour
 
     public IEnumerator GetMyRank(Action<MyRankData> onCallback)
     {
+        if (isConfigMissing){
+            Debug.LogWarning("⚠️ [RankingManager] ServerConfig 누락으로 내 랭킹 조회를 스킵합니다.");
+            if (onCallback != null) onCallback(null);
+            yield break;
+        }
+
         string uuid = GetOrCreateUUID();
         UnityWebRequest request = UnityWebRequest.Get(BaseUrl + "/rankings/" + uuid);
         request.timeout = 5;
@@ -171,6 +213,11 @@ public class RankingManager : MonoBehaviour
     // 게임 시작 시 혹은 팝업을 열기 전 호출하여 서버 상태 갱신
     public IEnumerator CheckServerStatus()
     {
+        if (isConfigMissing){
+            IsServerAlive = false;
+            yield break;
+        }
+
         using (UnityWebRequest request = UnityWebRequest.Get(BaseUrl + "/health"))
         {
             request.timeout = 3;
