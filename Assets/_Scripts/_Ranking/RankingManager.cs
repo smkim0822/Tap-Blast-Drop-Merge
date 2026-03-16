@@ -40,7 +40,7 @@ public class RankingManager : MonoBehaviour
                 return "http://localhost:8080/api";
             }
 
-            return $"https:{config.oracleIp}/api";
+            return $"https://{config.oracleIp}/api";
         }
     }
 
