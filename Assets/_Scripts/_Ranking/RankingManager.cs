@@ -39,11 +39,8 @@ public class RankingManager : MonoBehaviour
             if (isConfigMissing || config == null){
                 return "http://localhost:8080/api";
             }
-// #if UNITY_EDITOR
-//             return "http://localhost:8080/api";
-// #else
-            return $"http://{config.oracleIp}:8080/api";
-// #endif
+
+            return $"https:{config.oracleIp}/api";
         }
     }
 
