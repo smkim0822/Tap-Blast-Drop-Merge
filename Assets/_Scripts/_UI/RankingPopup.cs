@@ -171,6 +171,12 @@ public class RankingPopup : MonoBehaviour
             NicknameManager.Instance.SetNickname(newName);
         }
 
+        // 서버로 닉네임 즉시 동기화
+        if (RankingManager.Instance != null)
+        {
+            StartCoroutine(RankingManager.Instance.UpdateNickname(newName));
+        }
+
         // UI 즉시 갱신 및 팝업 닫기
         UpdateMyRankUI();
         CloseEditNamePopup();

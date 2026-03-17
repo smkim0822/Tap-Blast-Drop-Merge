@@ -22,6 +22,12 @@ public class MyRankData
     public int score;
 }
 
+[System.Serializable]
+public class NicknameUpdateReq
+{
+    public string name;
+}
+
 public class RankingManager : MonoBehaviour
 {
     public static RankingManager Instance;
@@ -220,6 +226,39 @@ public class RankingManager : MonoBehaviour
             request.timeout = 3;
             yield return request.SendWebRequest();
             IsServerAlive = (request.result == UnityWebRequest.Result.Success && request.downloadHandler.text == "ok");
+        }
+    }
+
+    // 닉네임 단독 동기화 API 호출
+    public IEnumerator UpdateNickname(string newName)
+    {
+        if (isConfigMissing)
+        {
+            Debug.LogWarning("⚠️ [RankingManager] ServerConfig 누락으로 닉네임 동기화를 스킵합니다.");
+            yield break;
+        }
+
+        string uuid = GetOrCreateUUID();
+        string url = BaseUrl + "/rankings/" + uuid + "/name";
+
+        NicknameUpdateReq req = new NicknameUpdateReq {name = newName };
+        string json = JsonUtility.ToJson(req);
+
+        UnityWebRequest request = new UnityWebRequest(url, "PATCH");
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            Debug.Log($"<color=green>✅ 닉네임 서버 즉시 동기화 성공: {newName}</color>");
+        }
+        else
+        {
+            Debug.LogWarning($"⚠️ 닉네임 동기화 실패 (신규 유저일 수 있음): {request.error}");
         }
     }
 }
