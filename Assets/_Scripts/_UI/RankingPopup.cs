@@ -110,7 +110,7 @@ public class RankingPopup : MonoBehaviour
         if (myData == null)
         {
             // 기록이 아예 없는 유저
-            string currentName = PlayerPrefs.GetString("PlayerName", "Guest");
+            string currentName = NicknameManager.Instance != null ? NicknameManager.Instance.GetNickname() : PlayerPrefs.GetString("PlayerName", "Guest");
             myNameText.text = currentName;
             myRankText.text = "-";
             myScoreText.text = "0";
@@ -122,22 +122,6 @@ public class RankingPopup : MonoBehaviour
             myRankText.text = myData.rank.ToString();
             myScoreText.text = myData.score.ToString("N0");
         }
-    }
-
-    // NicknameManager를 사용하여 실제 닉네임 표시
-    void UpdateMyRankUI()
-    {
-        int bestScore = PlayerPrefs.GetInt("BestScore", 0);
-        
-        string myName = NicknameManager.Instance != null 
-                        ? NicknameManager.Instance.GetNickname() 
-                        : "Guest";
-
-        myNameText.text = myName;
-        myScoreText.text = bestScore.ToString("N0");
-
-        if (bestScore == 0) myRankText.text = "-";
-        else myRankText.text = "?";
     }
 
     // --- 닉네임 수정 로직 ---
@@ -171,15 +155,22 @@ public class RankingPopup : MonoBehaviour
             NicknameManager.Instance.SetNickname(newName);
         }
 
-        // 서버로 닉네임 즉시 동기화
+        // UI 즉시 갱신 및 팝업 닫기
+        CloseEditNamePopup();
+        StartCoroutine(SyncNicknameAndRefresh(newName));
+    }
+
+    // 서버 통신이 끝날 때까지 기다렸다가 UI를 새로고침하는 코루틴
+    private IEnumerator SyncNicknameAndRefresh(string newName)
+    {
+        // 서버와 닉네임 동기화를 시작하고, 끝날 때까지 대기
         if (RankingManager.Instance != null)
         {
-            StartCoroutine(RankingManager.Instance.UpdateNickname(newName));
+            yield return StartCoroutine(RankingManager.Instance.UpdateNickname(newName));
         }
 
-        // UI 즉시 갱신 및 팝업 닫기
-        UpdateMyRankUI();
-        CloseEditNamePopup();
+        // 최신 랭킹 리스트와 내 정보를 서버에서 다시 가져옴
+        RefreshRanking();
     }
 
     // --- 애니메이션 로직 ---
