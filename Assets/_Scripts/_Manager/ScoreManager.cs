@@ -126,6 +126,12 @@ public class ScoreManager : MonoBehaviour
         UpdateUI();
     }
 
+    public void ReloadBestScore()
+    {
+        bestScore = PlayerPrefs.GetInt("BestScore", 0);
+        UpdateUI();
+    }
+
     void UpdateUI()
     {
         if (currentScoreText != null) currentScoreText.text = currentScore.ToString();
