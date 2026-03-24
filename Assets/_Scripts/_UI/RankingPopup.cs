@@ -149,6 +149,13 @@ public class RankingPopup : MonoBehaviour
 
         string newName = nameInput.text;
 
+        // 유효성 검사 (글자 수 제한)
+        if (string.IsNullOrWhiteSpace(newName) || newName.Length > 10)
+        {
+            Debug.LogWarning($"⚠️ 닉네임 변경 실패: 길이가 유효하지 않습니다. (현재 길이: {newName.Length}자). API 호출을 차단합니다.");
+            return;
+        }
+
         // 버튼 쿨타임 코루틴 시작
         StartCoroutine(ButtonCooldownRoutine());
 
