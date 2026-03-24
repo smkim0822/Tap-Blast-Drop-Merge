@@ -145,9 +145,12 @@ public class RankingPopup : MonoBehaviour
 
     private void SaveNewNickname()
     {
-        if (nameInput == null) return;
+        if (nameInput == null || (saveNameButton != null && !saveNameButton.interactable)) return;
 
         string newName = nameInput.text;
+
+        // 버튼 쿨타임 코루틴 시작
+        StartCoroutine(ButtonCooldownRoutine());
 
         // 매니저를 통해 저장 (매니저 내부에서 유효성 검사 수행함)
         if (NicknameManager.Instance != null)
@@ -158,6 +161,17 @@ public class RankingPopup : MonoBehaviour
         // UI 즉시 갱신 및 팝업 닫기
         CloseEditNamePopup();
         StartCoroutine(SyncNicknameAndRefresh(newName));
+    }
+
+    // 닉네임 변경 쿨타임 코루틴
+    private IEnumerator ButtonCooldownRoutine()
+    {
+        if (saveNameButton != null)
+        {
+            saveNameButton.interactable = false;    // 즉시 비활성화
+            yield return new WaitForSeconds(3f);    // 3초 대기
+            saveNameButton.interactable = true;    // 복구
+        }
     }
 
     // 서버 통신이 끝날 때까지 기다렸다가 UI를 새로고침하는 코루틴
