@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections;
+using System;
 
 public class RankingPopup : MonoBehaviour
 {
@@ -16,10 +17,12 @@ public class RankingPopup : MonoBehaviour
 
     [Header("Nickname Edit UI")]
     public Button editNameButton;       // 연필 모양 혹은 수정 버튼
-    public GameObject editPopupPanel;   // 수정할 때 뜨는 작은 창(패널)
+    public GameObject editPopupRoot;    // 수정할 때 뜨는 작은 창(패널)
+    public Transform editPopupContent;  // 실제 창 내용물 (애니메이션 적용 대상)
     public TMP_InputField nameInput;    // 새로운 이름을 입력할 곳
     public Button saveNameButton;       // 저장 버튼
     public Button cancelNameButton;     // 취소 버튼
+    public float editPopupAnimDuration = 0.2f;  // 에딧 팝업 애니메이션 속도
 
     [Header("Animation Settings")]
     [SerializeField] private RectTransform popupWindow;
@@ -27,6 +30,7 @@ public class RankingPopup : MonoBehaviour
     [SerializeField] private float animDuration = 0.2f;
 
     private bool isAnimating = false;
+    private Coroutine editAnimCoroutine;
 
     private void Start()
     {
@@ -40,8 +44,8 @@ public class RankingPopup : MonoBehaviour
             cancelNameButton.onClick.AddListener(CloseEditNamePopup);
 
         // 수정 팝업은 처음에 꺼둠
-        if (editPopupPanel != null)
-            editPopupPanel.SetActive(false);
+        if (editPopupRoot != null)
+            editPopupRoot.SetActive(false);
     }
 
     private void OnEnable()
@@ -51,6 +55,10 @@ public class RankingPopup : MonoBehaviour
         {
             saveNameButton.interactable = true;
         }
+
+        // 모달 UI 생명주기 초기화
+        // 랭킹 팝업이 활성화될 때 닉네임 팝업을 명시적으로 닫음
+        CloseEditNamePopup();
         
         if (!isAnimating)
         {
@@ -134,19 +142,44 @@ public class RankingPopup : MonoBehaviour
 
     private void OpenEditNamePopup()
     {
-        if (editPopupPanel != null)
+        if (editPopupRoot != null)
         {
-            editPopupPanel.SetActive(true);
+            editPopupRoot.SetActive(true);
+
             // 입력창에 현재 닉네임을 미리 적어줌
             if (NicknameManager.Instance != null)
+            {
                 nameInput.text = NicknameManager.Instance.GetNickname();
+            }
+
+            // 애니메이션
+            if (editAnimCoroutine != null)
+            {
+                StopCoroutine(editAnimCoroutine);
+            }
+
+            editAnimCoroutine = StartCoroutine(CoAnimateEditPopup(Vector3.zero, Vector3.one, null));
         }
     }
 
-    private void CloseEditNamePopup()
+    public void CloseEditNamePopup()
     {
-        if (editPopupPanel != null)
-            editPopupPanel.SetActive(false);
+        // 이미 꺼져있으면 무시
+        if (editPopupRoot == null || !editPopupRoot.activeSelf)
+        {
+            return;
+        }
+
+        // 애니메이션
+        if (editAnimCoroutine != null)
+        {
+            StopCoroutine(editAnimCoroutine);
+        }
+
+        editAnimCoroutine = StartCoroutine(CoAnimateEditPopup(Vector3.one, Vector3.zero, () =>
+        {
+            editPopupRoot.SetActive(false);
+        }));
     }
 
     private void SaveNewNickname()
@@ -201,6 +234,33 @@ public class RankingPopup : MonoBehaviour
     }
 
     // --- 애니메이션 로직 ---
+
+    // 닉네임 에딧 팝업 애니메이션 코루틴
+    private IEnumerator CoAnimateEditPopup(Vector3 startScale, Vector3 endScale, Action onComplete)
+    {
+        if (editPopupContent == null)
+        {
+            yield break;
+        }
+
+        float elapsed = 0f;
+        editPopupContent.localScale = startScale;
+
+        while (elapsed < editPopupAnimDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / editPopupAnimDuration;
+
+            // 자연스러운 감속(Ease Out Cubic)
+            float easeT = 1f - Mathf.Pow(1f - t, 3f);
+
+            editPopupContent.localScale = Vector3.Lerp(startScale, endScale, easeT);
+            yield return null;
+        }
+
+        editPopupContent.localScale = endScale;
+        onComplete?.Invoke();
+    }
 
     IEnumerator AnimateOpen()
     {
