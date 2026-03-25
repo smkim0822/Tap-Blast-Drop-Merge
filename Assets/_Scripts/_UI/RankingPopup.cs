@@ -46,6 +46,12 @@ public class RankingPopup : MonoBehaviour
 
     private void OnEnable()
     {
+        // UI 강제 초기화
+        if (saveNameButton != null)
+        {
+            saveNameButton.interactable = true;
+        }
+        
         if (!isAnimating)
         {
             RefreshRanking();
@@ -176,7 +182,7 @@ public class RankingPopup : MonoBehaviour
         if (saveNameButton != null)
         {
             saveNameButton.interactable = false;    // 즉시 비활성화
-            yield return new WaitForSeconds(3f);    // 3초 대기
+            yield return new WaitForSecondsRealtime(3f);    // 3초 대기
             saveNameButton.interactable = true;    // 복구
         }
     }
