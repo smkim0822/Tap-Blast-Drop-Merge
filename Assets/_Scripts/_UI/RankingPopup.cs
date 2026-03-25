@@ -29,19 +29,43 @@ public class RankingPopup : MonoBehaviour
     [SerializeField] private AnimationCurve openCurve;
     [SerializeField] private float animDuration = 0.2f;
 
+    [Header("Keyboard UX Settings")]
+    public float keyboardOffsetY = 400f;    // 키보드가 올라올 때 위로 이동할 Y값
+    public float moveAnimDuration = 0.2f;   // 이동 애니메이션 속도
+
+    private Coroutine moveCoroutine;
+    private RectTransform editPopupRect;
+
     private bool isAnimating = false;
     private Coroutine editAnimCoroutine;
 
     private void Start()
     {
         if (editNameButton != null)
+        {
             editNameButton.onClick.AddListener(OpenEditNamePopup);
+        }
 
         if (saveNameButton != null)
+        {
             saveNameButton.onClick.AddListener(SaveNewNickname);
+        }
 
         if (cancelNameButton != null)
+        {
             cancelNameButton.onClick.AddListener(CloseEditNamePopup);
+        }
+
+        if (editPopupContent != null)
+        {
+            editPopupRect = editPopupContent.GetComponent<RectTransform>();
+        }
+
+        if (nameInput != null)
+        {
+            nameInput.onSelect.AddListener(OnInputSelect);
+            nameInput.onDeselect.AddListener(OnInputDeselect);
+        }
 
         // 수정 팝업은 처음에 꺼둠
         if (editPopupRoot != null)
@@ -145,6 +169,12 @@ public class RankingPopup : MonoBehaviour
         if (editPopupRoot != null)
         {
             editPopupRoot.SetActive(true);
+
+            // 위치 초기화
+            if (editPopupRect != null)
+            {
+                editPopupRect.anchoredPosition = Vector2.zero;
+            }
 
             // 입력창에 현재 닉네임을 미리 적어줌
             if (NicknameManager.Instance != null)
@@ -303,5 +333,54 @@ public class RankingPopup : MonoBehaviour
         isAnimating = false;
 
         gameObject.SetActive(false);
+    }
+
+    // --- 키보드 위치 이동 로직 ---
+
+    private void OnInputSelect(string text)
+    {
+        // 입력창 터치 시 위로 이동
+        MovePopupY(keyboardOffsetY);
+    }
+
+    private void OnInputDeselect(string text)
+    {
+        // 입력 종료 시 원래 자리로 복구
+        MovePopupY(0f);
+    }
+
+    private void MovePopupY(float targetY)
+    {
+        if (editPopupRect == null || !editPopupRoot.activeSelf)
+        {
+            return;
+        }
+
+        if (moveCoroutine != null)
+        {
+            StopCoroutine(moveCoroutine);
+        }
+        moveCoroutine = StartCoroutine(CoMovePopupY(targetY));
+    }
+
+    private IEnumerator CoMovePopupY(float targetY)
+    {
+        float elapsed = 0f;
+        Vector2 startPos = editPopupRect.anchoredPosition;
+        Vector2 endPos = new Vector2(startPos.x, targetY);
+
+        while (elapsed < moveAnimDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / moveAnimDuration;
+
+            // 스케일 애니메이션과 동일한 자연스러운 감속(Ease Out Cubic) 적용
+            float easeT = 1f - Mathf.Pow(1f - t, 3f);
+
+            editPopupRect.anchoredPosition = Vector2.Lerp(startPos, endPos, easeT);
+            yield return null;
+        }
+
+        editPopupRect.anchoredPosition = endPos;
     }
 }
