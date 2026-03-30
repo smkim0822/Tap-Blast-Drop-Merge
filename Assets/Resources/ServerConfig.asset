@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8939c34be9084784aa6c62db81c54c18, type: 3}
   m_Name: ServerConfig
   m_EditorClassIdentifier: Assembly-CSharp::ServerConfig
-  oracleIp: https://pd-ranking.duckdns.org
+  oracleIp: pd-ranking.duckdns.org
   secretKey: hyuswcapstonegamepdkey2026!!
