@@ -18,18 +18,19 @@
 ## ✨ 주요 특징 (Key Features)
 * **다이나믹 물리 퍼즐 시스템:** 물리 충돌, 중력, 산개 효과를 활용한 역동적인 화면 연출 및 연쇄 폭발 알고리즘.
 * **끊김 없는 플레이 경험:** 게임 오버 시 씬 전환이나 로딩 없는 즉각적인 재시작 로직 구현.
-* **반응형 UX/UI 및 연출:** 다양한 모바일 해상도(Safe Area) 대응, AnimationCurve 기반 팝업 연출, 동적 사운드 피치(Pitch) 적용.
-* **글로벌 랭킹 시스템:** 전용 서버와의 REST API 통신을 통해 실시간 Top 50 랭킹 및 내 순위 제공.
+* **모바일 최적화 UX/UI:** 가상 키보드 가림 현상 방지(반응형 팝업 UI), 다양한 모바일 해상도(Safe Area) 대응, AnimationCurve 기반 팝업 연출.
+* **글로벌 라이브 랭킹 시스템:** 오라클 클라우드 서버와 HTTPS(REST API) 기반 실시간 통신을 통해 데이터 즉시 동기화 및 무결성 확보. API 도배 방지 쿨타임 적용.
 
 ## 🛠️ 기술 스택 (Tech Stack)
 * **Client (Game Engine):** Unity 6 (6000.3.8f1), C#
 * **Architecture & Pattern:** Singleton Pattern
-* **Communication:** REST API (UnityWebRequest)
+* **Communication & Security:** REST API (UnityWebRequest), HTTPS (SSL/TLS)
 
 ## 🔗 관련 프로젝트 (Related Project)
 * [[랭킹 서버 레포지토리 (RankingServer)]](https://github.com/romantic02/RankingServer)
 
 ## 📅 개발 히스토리 (Change Log)
-* **v0.7.0:** 랭킹 시스템 연동 완료 (REST API 통신, UUID 기반 식별, 랭킹 UI 연동)
-* **v0.6.1:** Unity 6 엔진 업그레이드, 모바일 해상도 대응 및 UI/UX 폴리싱
+* **v0.8.0:** 라이브 랭킹 서버 정식 통합 (HTTPS 통신), 데이터 즉시 동기화 아키텍처 구축 및 모바일 키보드 UX/UI 폴리싱
+* **v0.7.0:** 랭킹 시스템 연동 (REST API 통신 기반 구축, UUID 식별)
+* **v0.6.1:** Unity 6 엔진 업그레이드, 모바일 해상도 대응
 * **v0.6.0:** 핵심 게임 루프 완성 및 UI 시스템 고도화
