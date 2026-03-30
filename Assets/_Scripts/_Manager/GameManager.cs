@@ -29,7 +29,42 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         EnterMainState();
+
+        // 게임 시작 시 서버와 최고 점수 동기화
+        SyncBestScoreWithServer();
     }
+
+    // --- 서버 데이터 동기화 로직 ---
+    private void SyncBestScoreWithServer()
+    {
+        if (RankingManager.Instance != null)
+        {
+            StartCoroutine(RankingManager.Instance.GetMyRank(OnSyncMyRankReceived));
+        }
+    }
+
+    private void OnSyncMyRankReceived(MyRankData myData)
+    {
+        // 서버에 기록이 없는 경우 로컬 데이터 유지
+        if (myData == null) return;
+
+        int localBestScore = PlayerPrefs.GetInt("BestScore", 0);
+        int serverBestScore = myData.score;
+
+        // 서버 점수가 로컬 점수보다 높을 경우에만 덮어쓰기
+        if (serverBestScore > localBestScore)
+        {
+            PlayerPrefs.SetInt("BestScore", serverBestScore);
+            PlayerPrefs.Save();
+            Debug.Log($"[데이터 동기화] 로컬 점수 ({localBestScore})를 서버 최고 점수({serverBestScore})로 갱신했습니다.");
+
+            if (ScoreManager.Instance != null)
+            {
+                ScoreManager.Instance.ReloadBestScore();
+            }
+        }
+    }
+    // ------
 
     // 상태 전환
 
