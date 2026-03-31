@@ -39,6 +39,7 @@ public class RankingPopup : MonoBehaviour
 
     private bool isAnimating = false;
     private Coroutine editAnimCoroutine;
+    private Coroutine syncRoutine;
 
     private void Start()
     {
@@ -112,27 +113,36 @@ public class RankingPopup : MonoBehaviour
         StartCoroutine(AnimateClose());
     }
 
+    // 오프라인 강제 전환 함수
+    private void TriggerOfflineFallback()
+    {
+        foreach (Transform child in contentParent)
+        {
+            Destroy(child.gameObject);
+        }
+
+        if (offlineMessageObject != null)
+        {
+            offlineMessageObject.SetActive(true);
+        }
+        
+        // 로컬 닉네임과 최고 점수를 UI에 강제 렌더링
+        ShowNetworkErrorStatus();
+    }
+
     public void RefreshRanking()
     {
+        if (syncRoutine != null)
+        {
+            StopCoroutine(syncRoutine);
+        }
+
         if (RankingManager.Instance != null)
         {
             // 네트워크 상태에 따른 분기 처리
             if (!RankingManager.Instance.IsNetworkReached())
             {
-                // 기존 리스트 아이템 삭제
-                foreach (Transform child in contentParent)
-                {
-                    Destroy(child.gameObject);
-                }
-
-                // 오프라인 메시지 활성화
-                if (offlineMessageObject != null)
-                {
-                    offlineMessageObject.SetActive(true);
-                }
-
-                // 내 랭킹 정보 오프라인 상태로 표시
-                ShowNetworkErrorStatus();
+                TriggerOfflineFallback();
                 return;
             }
 
@@ -142,8 +152,8 @@ public class RankingPopup : MonoBehaviour
                 offlineMessageObject.SetActive(false);
             }
 
-            // 동기화 코루틴 실행
-            StartCoroutine(SyncAndLoadRankingRoutine());
+            // 코루틴 참조 저장
+            syncRoutine = StartCoroutine(SyncAndLoadRankingRoutine());
         }
     }
 
@@ -152,19 +162,28 @@ public class RankingPopup : MonoBehaviour
     {
         MyRankData serverMyData = null;
         bool isMyRankLoaded = false;
+        bool isNetworkError = false;
 
         // 서버에서 데이터 가져오기
-        StartCoroutine(RankingManager.Instance.GetMyRank(data =>
+        StartCoroutine(RankingManager.Instance.GetMyRank((success, data) =>
         {
+            if (!success) isNetworkError = true;
             serverMyData = data;
             isMyRankLoaded = true;
         }));
 
         yield return new WaitUntil(() => isMyRankLoaded);
 
+        if (isNetworkError)
+        {
+            Debug.LogWarning("⚠️ 실제 통신 실패가 감지되어 로컬 데이터를 강제 로드합니다.");
+            TriggerOfflineFallback();
+            yield break;
+        }
+
         // 로컬에 저장된 정보 가져오기
         string localName = NicknameManager.Instance != null ? NicknameManager.Instance.GetNickname() : PlayerPrefs.GetString("PlayerName", "Guest");
-        int localHighScore = PlayerPrefs.GetInt("LocalHighScore", 0);
+        int localHighScore = PlayerPrefs.GetInt("BestScore", 0);
 
         bool needsNicknameSync = false;
         bool needsScoreSync = false;
@@ -213,7 +232,7 @@ public class RankingPopup : MonoBehaviour
 
             // 최신화된 정보 가져오기
             isMyRankLoaded = false;
-            StartCoroutine(RankingManager.Instance.GetMyRank(data =>
+            StartCoroutine(RankingManager.Instance.GetMyRank((success, data) =>
             {
                 serverMyData = data;
                 isMyRankLoaded = true;
@@ -223,12 +242,24 @@ public class RankingPopup : MonoBehaviour
 
         // 동기화가 끝난 상태에서 UI 갱신
         UpdateMyRankUI(serverMyData, localName);
-        StartCoroutine(RankingManager.Instance.GetRanks(OnDataReceived));
+        StartCoroutine(RankingManager.Instance.GetRanks((success, ranks) =>
+        {
+            if (success)
+            {
+                OnDataReceived(ranks);
+            }
+            else
+            {
+                TriggerOfflineFallback();
+            }
+        }));
     }
 
     // UI 전용 함수
     private void UpdateMyRankUI(MyRankData myData, string localName)
     {
+        int localBest = PlayerPrefs.GetInt("BestScore", 0);
+
         if (myData == null)
         {
             if (myNameText != null)
@@ -241,7 +272,7 @@ public class RankingPopup : MonoBehaviour
             }
             if (myScoreText != null)
             {
-                myScoreText.text = "0";
+                myScoreText.text = localBest.ToString("N0");
             }
         }
         else
@@ -252,11 +283,13 @@ public class RankingPopup : MonoBehaviour
             }
             if (myRankText != null)
             {
-                myRankText.text = myData.rank.ToString();
+                myRankText.text = myData.rank > 0 ? myData.rank.ToString() : "-";
             }
+            
+            int displayScore = Mathf.Max(myData.score, localBest);
             if (myScoreText != null)
             {
-                myScoreText.text = myData.score.ToString("N0");
+                myScoreText.text = displayScore.ToString("N0");
             }
         }
     }
@@ -272,7 +305,7 @@ public class RankingPopup : MonoBehaviour
         }
 
         // 로컬에서 최고 점수 가져오기
-        int localHighScore = PlayerPrefs.GetInt("LocalHighScore", 0);
+        int localHighScore = PlayerPrefs.GetInt("BestScore", 0);
 
         // UI에 적용
         if (myNameText != null)
@@ -405,7 +438,7 @@ public class RankingPopup : MonoBehaviour
         // 오프라인 시 닉네임 동기화 대기 취소 및 알림
         if (RankingManager.Instance != null && !RankingManager.Instance.IsNetworkReached())
         {
-            ShowNetworkErrorStatus();
+            TriggerOfflineFallback();
             yield break;
         }
 
