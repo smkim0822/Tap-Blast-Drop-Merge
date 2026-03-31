@@ -37,6 +37,8 @@ public class RankingManager : MonoBehaviour
 
     public bool IsServerAlive { get; private set; } = false;
     private const string UUID_KEY = "PlayerUUID";
+    // 로컬 백업용 키값
+    private const string LOCAL_HIGH_SCORE_KEY = "LocalHighScore";
 
     private string BaseUrl
     {
@@ -100,11 +102,44 @@ public class RankingManager : MonoBehaviour
         return uuid;
     }
 
+    // 네트워크 연결 상태 체크 유틸리티
+    public bool IsNetworkReached()
+    {
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+        {
+            Debug.LogWarning("⚠️ [RankingManager] 네트워크가 연결되어 있지 않습니다.");
+            return false;
+        }
+        return true;
+    }
+
+    // 오프라인 대비 로컬 점수 백업
+    private void SaveScoreLocally(int score)
+    {
+        int currentLocalHigh = PlayerPrefs.GetInt(LOCAL_HIGH_SCORE_KEY, 0);
+        if (score > currentLocalHigh)
+        {
+            PlayerPrefs.SetInt(LOCAL_HIGH_SCORE_KEY, score);
+            PlayerPrefs.Save();
+            Debug.Log($"💾 [RankingManager] 최고 점수 로컬 백업 완료: {score}");
+        }
+    }
+
     // 점수 저장
     public IEnumerator PostScore(int score)
     {
         if (isConfigMissing){
             Debug.LogWarning("⚠️ [RankingManager] ServerConfig 누락으로 점수 저장 요청을 스킵합니다.");
+            yield break;
+        }
+
+        // 서버 전송 전 로컬에 먼저 백업
+        SaveScoreLocally(score);
+
+        // 오프라인 시 통신 중단
+        if (!IsNetworkReached())
+        {
+            Debug.LogWarning("⚠️ [RankingManager] 오프라인 상태이므로 점수 갱신 API 호출을 취소합니다. (점수는 로컬에 보존됨)");
             yield break;
         }
 
@@ -126,6 +161,9 @@ public class RankingManager : MonoBehaviour
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
 
+        // 타임아웃 5초 설정
+        request.timeout = 5;
+
         yield return request.SendWebRequest();
 
         if (request.result == UnityWebRequest.Result.Success)
@@ -146,6 +184,17 @@ public class RankingManager : MonoBehaviour
             if (onCallback != null) onCallback(new ScoreData[0]);
             yield break;
         }
+
+        // 오프라인 시 통신 중단 및 빈 배열 반환
+        if (!IsNetworkReached())
+        {
+            if (onCallback != null)
+            {
+                onCallback(new ScoreData[0]);
+            }
+            yield break;
+        }
+
         UnityWebRequest request = UnityWebRequest.Get(BaseUrl + "/rankings");
         request.timeout = 5;
         yield return request.SendWebRequest();
@@ -168,6 +217,16 @@ public class RankingManager : MonoBehaviour
         if (isConfigMissing){
             Debug.LogWarning("⚠️ [RankingManager] ServerConfig 누락으로 내 랭킹 조회를 스킵합니다.");
             if (onCallback != null) onCallback(null);
+            yield break;
+        }
+
+        // 오프라인 시 통신 중단 및 null 반환
+        if (!IsNetworkReached())
+        {
+            if (onCallback != null)
+            {
+                onCallback(null);
+            }
             yield break;
         }
 
@@ -221,6 +280,13 @@ public class RankingManager : MonoBehaviour
             yield break;
         }
 
+        // 오프라인 시 헬스체크 중단
+        if (!IsNetworkReached())
+        {
+            IsServerAlive = false;
+            yield break;
+        }
+
         using (UnityWebRequest request = UnityWebRequest.Get(BaseUrl + "/health"))
         {
             request.timeout = 3;
@@ -238,6 +304,13 @@ public class RankingManager : MonoBehaviour
             yield break;
         }
 
+        // 오프라인 시 닉네임 동기화 중단
+        if (!IsNetworkReached())
+        {
+            Debug.LogWarning("⚠️ [RankingManager] 오프라인 상태이므로 닉네임 갱신 API 호출을 취소합니다.");
+            yield break;
+        }
+
         string uuid = GetOrCreateUUID();
         string url = BaseUrl + "/rankings/" + uuid + "/name";
 
@@ -249,6 +322,9 @@ public class RankingManager : MonoBehaviour
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
+
+        // 타임아웃 5초 설정
+        request.timeout = 5;
 
         yield return request.SendWebRequest();
 
