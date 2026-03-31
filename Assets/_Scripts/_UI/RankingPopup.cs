@@ -9,6 +9,7 @@ public class RankingPopup : MonoBehaviour
     [Header("UI References")]
     public Transform contentParent;
     public RankingItem itemPrefab;
+    public GameObject offlineMessageObject;
 
     [Header("My Rank References")]
     public TextMeshProUGUI myNameText;
@@ -115,11 +116,178 @@ public class RankingPopup : MonoBehaviour
     {
         if (RankingManager.Instance != null)
         {
-            // 1. 전체 리스트 (Top 50) 호출
-            StartCoroutine(RankingManager.Instance.GetRanks(OnDataReceived));
-            
-            // 2. 내 랭킹 단건 호출
-            StartCoroutine(RankingManager.Instance.GetMyRank(OnMyRankReceived));
+            // 네트워크 상태에 따른 분기 처리
+            if (!RankingManager.Instance.IsNetworkReached())
+            {
+                // 기존 리스트 아이템 삭제
+                foreach (Transform child in contentParent)
+                {
+                    Destroy(child.gameObject);
+                }
+
+                // 오프라인 메시지 활성화
+                if (offlineMessageObject != null)
+                {
+                    offlineMessageObject.SetActive(true);
+                }
+
+                // 내 랭킹 정보 오프라인 상태로 표시
+                ShowNetworkErrorStatus();
+                return;
+            }
+
+            // 온라인 상태일 때
+            if (offlineMessageObject != null)
+            {
+                offlineMessageObject.SetActive(false);
+            }
+
+            // 동기화 코루틴 실행
+            StartCoroutine(SyncAndLoadRankingRoutine());
+        }
+    }
+
+    // 오프라인 데이터를 서버에 동기화한 뒤 랭킹을 로드하는 코루틴
+    private IEnumerator SyncAndLoadRankingRoutine()
+    {
+        MyRankData serverMyData = null;
+        bool isMyRankLoaded = false;
+
+        // 서버에서 데이터 가져오기
+        StartCoroutine(RankingManager.Instance.GetMyRank(data =>
+        {
+            serverMyData = data;
+            isMyRankLoaded = true;
+        }));
+
+        yield return new WaitUntil(() => isMyRankLoaded);
+
+        // 로컬에 저장된 정보 가져오기
+        string localName = NicknameManager.Instance != null ? NicknameManager.Instance.GetNickname() : PlayerPrefs.GetString("PlayerName", "Guest");
+        int localHighScore = PlayerPrefs.GetInt("LocalHighScore", 0);
+
+        bool needsNicknameSync = false;
+        bool needsScoreSync = false;
+
+        // 서버 데이터와 로컬 데이터 비교
+        if (serverMyData == null)
+        {
+            // 서버에 기록이 없는 신규 유저
+            needsNicknameSync = true;
+            if (localHighScore > 0)
+            {
+                needsScoreSync = true;
+            }
+        }
+        else
+        {
+            // 오프라인에서 이름 변경한 경우
+            if (localName != serverMyData.name)
+            {
+                needsNicknameSync = true;
+            }
+            // 오프라인에서 최고 기록 세운 경우
+            if (localHighScore > serverMyData.score)
+            {
+                needsScoreSync = true;
+            }
+        }
+
+        // 동기화가 필요하다면 업데이트
+        if (needsNicknameSync || needsScoreSync)
+        {
+            Debug.Log("🔄 [지연 동기화] 오프라인에서 변경된 데이터를 서버에 업데이트합니다.");
+
+            // 닉네임 동기화 대기
+            if (needsNicknameSync)
+            {
+                yield return StartCoroutine(RankingManager.Instance.UpdateNickname(localName));
+            }
+
+            // 점수 동기화 대기
+            if (needsScoreSync)
+            {
+                yield return StartCoroutine(RankingManager.Instance.PostScore(localHighScore));
+                Debug.Log($"✔️ 오프라인 신기록 {localHighScore}점을 서버로 전송했습니다!");
+            }
+
+            // 최신화된 정보 가져오기
+            isMyRankLoaded = false;
+            StartCoroutine(RankingManager.Instance.GetMyRank(data =>
+            {
+                serverMyData = data;
+                isMyRankLoaded = true;
+            }));
+            yield return new WaitUntil(() => isMyRankLoaded);
+        }
+
+        // 동기화가 끝난 상태에서 UI 갱신
+        UpdateMyRankUI(serverMyData, localName);
+        StartCoroutine(RankingManager.Instance.GetRanks(OnDataReceived));
+    }
+
+    // UI 전용 함수
+    private void UpdateMyRankUI(MyRankData myData, string localName)
+    {
+        if (myData == null)
+        {
+            if (myNameText != null)
+            {
+                myNameText.text = localName;
+            }
+            if (myRankText != null)
+            {
+                myRankText.text = "-";
+            }
+            if (myScoreText != null)
+            {
+                myScoreText.text = "0";
+            }
+        }
+        else
+        {
+            if (myNameText != null)
+            {
+                myNameText.text = myData.name;
+            }
+            if (myRankText != null)
+            {
+                myRankText.text = myData.rank.ToString();
+            }
+            if (myScoreText != null)
+            {
+                myScoreText.text = myData.score.ToString("N0");
+            }
+        }
+    }
+
+    // 네트워크 에러 발생 시 UI 피드백
+    private void ShowNetworkErrorStatus()
+    {
+        // 로컬에 저장된 닉네임 가져오기
+        string currentName = PlayerPrefs.GetString("PlayerName", "Guest");
+        if (NicknameManager.Instance != null)
+        {
+            currentName = NicknameManager.Instance.GetNickname();
+        }
+
+        // 로컬에서 최고 점수 가져오기
+        int localHighScore = PlayerPrefs.GetInt("LocalHighScore", 0);
+
+        // UI에 적용
+        if (myNameText != null)
+        {
+            myNameText.text = $"{currentName} <size=70%><color=#FF7B7B>(Offline)</color></size>";
+        }
+
+        if (myRankText != null)
+        {
+            myRankText.text = "-";
+        }
+
+        if (myScoreText != null)
+        {
+            myScoreText.text = localHighScore.ToString("N0");
         }
     }
 
@@ -140,25 +308,6 @@ public class RankingPopup : MonoBehaviour
 
             RankingItem newItem = Instantiate(itemPrefab, contentParent);
             newItem.SetData(rank, playerName, score);
-        }
-    }
-
-    void OnMyRankReceived(MyRankData myData)
-    {
-        if (myData == null)
-        {
-            // 기록이 아예 없는 유저
-            string currentName = NicknameManager.Instance != null ? NicknameManager.Instance.GetNickname() : PlayerPrefs.GetString("PlayerName", "Guest");
-            myNameText.text = currentName;
-            myRankText.text = "-";
-            myScoreText.text = "0";
-        }
-        else
-        {
-            // 정상적으로 받아온 유저
-            myNameText.text = myData.name;
-            myRankText.text = myData.rank.ToString();
-            myScoreText.text = myData.score.ToString("N0");
         }
     }
 
@@ -253,6 +402,13 @@ public class RankingPopup : MonoBehaviour
     // 서버 통신이 끝날 때까지 기다렸다가 UI를 새로고침하는 코루틴
     private IEnumerator SyncNicknameAndRefresh(string newName)
     {
+        // 오프라인 시 닉네임 동기화 대기 취소 및 알림
+        if (RankingManager.Instance != null && !RankingManager.Instance.IsNetworkReached())
+        {
+            ShowNetworkErrorStatus();
+            yield break;
+        }
+
         // 서버와 닉네임 동기화를 시작하고, 끝날 때까지 대기
         if (RankingManager.Instance != null)
         {
