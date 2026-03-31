@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections; // IEnumerator 사용을 위해 필수
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
@@ -43,10 +43,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void OnSyncMyRankReceived(MyRankData myData)
+    private void OnSyncMyRankReceived(bool success, MyRankData myData)
     {
-        // 서버에 기록이 없는 경우 로컬 데이터 유지
-        if (myData == null) return;
+        if (!success || myData == null) return;
 
         int localBestScore = PlayerPrefs.GetInt("BestScore", 0);
         int serverBestScore = myData.score;
