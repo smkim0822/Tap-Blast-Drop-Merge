@@ -38,7 +38,7 @@ public class RankingManager : MonoBehaviour
     public bool IsServerAlive { get; private set; } = false;
     private const string UUID_KEY = "PlayerUUID";
     // 로컬 백업용 키값
-    private const string LOCAL_HIGH_SCORE_KEY = "LocalHighScore";
+    private const string LOCAL_HIGH_SCORE_KEY = "BestScore";
 
     private string BaseUrl
     {
@@ -128,13 +128,12 @@ public class RankingManager : MonoBehaviour
     // 점수 저장
     public IEnumerator PostScore(int score)
     {
+        SaveScoreLocally(score);
+
         if (isConfigMissing){
             Debug.LogWarning("⚠️ [RankingManager] ServerConfig 누락으로 점수 저장 요청을 스킵합니다.");
             yield break;
         }
-
-        // 서버 전송 전 로컬에 먼저 백업
-        SaveScoreLocally(score);
 
         // 오프라인 시 통신 중단
         if (!IsNetworkReached())
@@ -177,20 +176,19 @@ public class RankingManager : MonoBehaviour
     }
 
     // Top 50 랭킹 조회
-    public IEnumerator GetRanks(Action<ScoreData[]> onCallback)
+    public IEnumerator GetRanks(Action<bool, ScoreData[]> onCallback)
     {
         if (isConfigMissing){
             Debug.LogWarning("⚠️ [RankingManager] ServerConfig 누락으로 랭킹 조회를 스킵합니다.");
-            if (onCallback != null) onCallback(new ScoreData[0]);
+            if (onCallback != null) onCallback(false, null);
             yield break;
         }
 
-        // 오프라인 시 통신 중단 및 빈 배열 반환
         if (!IsNetworkReached())
         {
             if (onCallback != null)
             {
-                onCallback(new ScoreData[0]);
+                onCallback(false, null);
             }
             yield break;
         }
@@ -203,20 +201,20 @@ public class RankingManager : MonoBehaviour
         {
             string jsonResult = request.downloadHandler.text;
             ScoreData[] ranks = JsonHelper.FromJson<ScoreData>(jsonResult);
-            if (onCallback != null) onCallback(ranks);
+            if (onCallback != null) onCallback(true, ranks);
         }
         else
         {
             Debug.LogError($"❌ 랭킹 조회 실패! 에러: {request.error}");
-            if (onCallback != null) onCallback(null);
+            if (onCallback != null) onCallback(false, null);
         }
     }
 
-    public IEnumerator GetMyRank(Action<MyRankData> onCallback)
+    public IEnumerator GetMyRank(Action<bool, MyRankData> onCallback)
     {
         if (isConfigMissing){
             Debug.LogWarning("⚠️ [RankingManager] ServerConfig 누락으로 내 랭킹 조회를 스킵합니다.");
-            if (onCallback != null) onCallback(null);
+            if (onCallback != null) onCallback(false, null);
             yield break;
         }
 
@@ -225,7 +223,7 @@ public class RankingManager : MonoBehaviour
         {
             if (onCallback != null)
             {
-                onCallback(null);
+                onCallback(false, null);
             }
             yield break;
         }
@@ -239,19 +237,19 @@ public class RankingManager : MonoBehaviour
         {
             string jsonResult = request.downloadHandler.text;
             MyRankData myRank = JsonUtility.FromJson<MyRankData>(jsonResult);
-            if (onCallback != null) onCallback(myRank);
+            if (onCallback != null) onCallback(true, myRank);
         }
         else
         {
             // 서버에서 데이터가 없으면 404 Not Found를 응답함
             if (request.responseCode == 404)
             {
-                if (onCallback != null) onCallback(null); // 빈 데이터 처리
+                if (onCallback != null) onCallback(true, null); // 빈 데이터 처리
             }
             else
             {
                 Debug.LogError($"❌ 내 랭킹 단건 조회 실패! 에러: {request.error}");
-                if (onCallback != null) onCallback(null);
+                if (onCallback != null) onCallback(false, null);
             }
         }
     }
