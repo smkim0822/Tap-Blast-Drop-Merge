@@ -136,7 +136,7 @@ public class ScoreManager : MonoBehaviour
     {
         if (currentScoreText != null) currentScoreText.text = currentScore.ToString();
 
-        if (bestScoreText != null) bestScoreText.text = "Best: " + bestScore.ToString();
+        if (bestScoreText != null) bestScoreText.text = "Best Score\n" + bestScore.ToString();
     }
 
     public int GetCurrentScore() => currentScore;
