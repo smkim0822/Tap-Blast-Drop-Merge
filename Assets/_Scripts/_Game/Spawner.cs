@@ -87,7 +87,7 @@ public class Spawner : MonoBehaviour
         guideLine.textureMode = LineTextureMode.Tile;
 
         // 표시선이 테두리 위로 보이는 문제 방지
-        guideLine.sortingOrder = -10;
+        guideLine.sortingOrder = 1;
 
         // 게임 시작 시 초기화
         InitializeQueue();
@@ -276,7 +276,7 @@ public class Spawner : MonoBehaviour
                 if (isNextBomb)
                 {
                     uiColor.a = 1.0f;
-                    targetScale = 1.2f;
+                    // targetScale = 1.2f;
                 }
                 else
                 {
@@ -343,7 +343,8 @@ public class Spawner : MonoBehaviour
                 Color uiColor = Color.white;
                 uiColor.a = isNextBomb ? 1.0f : 0.5f;
                 nextBombUIs[i].color = uiColor;
-                nextBombUIs[i].rectTransform.localScale = Vector3.one * (isNextBomb ? 1.2f : 0.8f);
+                // nextBombUIs[i].rectTransform.localScale = Vector3.one * (isNextBomb ? 1.2f : 0.8f);
+                nextBombUIs[i].rectTransform.localScale = Vector3.one * 0.8f;
             }
         }
     }
