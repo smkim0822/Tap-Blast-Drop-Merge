@@ -405,8 +405,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: My Score
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
+  m_sharedMaterial: {fileID: -8143198849003852948, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -938,9 +938,33 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4416412609543268843, guid: 031744fc7d3c9bb48b514fc27d844128, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
+    - target: {fileID: 4416412609543268843, guid: 031744fc7d3c9bb48b514fc27d844128, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6136106346393618068, guid: 031744fc7d3c9bb48b514fc27d844128, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
+    - target: {fileID: 6136106346393618068, guid: 031744fc7d3c9bb48b514fc27d844128, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6452564620866071939, guid: 031744fc7d3c9bb48b514fc27d844128, type: 3}
       propertyPath: m_Name
       value: RankingItem
+      objectReference: {fileID: 0}
+    - target: {fileID: 7774335865158852234, guid: 031744fc7d3c9bb48b514fc27d844128, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
+    - target: {fileID: 7774335865158852234, guid: 031744fc7d3c9bb48b514fc27d844128, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3280,8 +3304,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: My Name
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
+  m_sharedMaterial: {fileID: -8143198849003852948, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3305,8 +3329,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 32
+  m_fontSizeBase: 32
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -3968,8 +3992,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u200B"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
+  m_sharedMaterial: {fileID: -8143198849003852948, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4537,8 +4561,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Enter text...
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
+  m_sharedMaterial: {fileID: -8143198849003852948, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -7108,14 +7132,14 @@ MonoBehaviour:
   m_VerticalScrollbarEventHandler: {fileID: 0}
   m_LayoutGroup: {fileID: 0}
   m_ScrollSensitivity: 1
-  m_ContentType: 4
+  m_ContentType: 0
   m_InputType: 0
   m_AsteriskChar: 42
-  m_KeyboardType: 1
+  m_KeyboardType: 0
   m_LineType: 0
-  m_HideMobileInput: 1
+  m_HideMobileInput: 0
   m_HideSoftKeyboard: 0
-  m_CharacterValidation: 4
+  m_CharacterValidation: 0
   m_RegexValue: 
   m_GlobalPointSize: 14
   m_CharacterLimit: 10
@@ -7151,7 +7175,7 @@ MonoBehaviour:
   m_CaretWidth: 1
   m_ReadOnly: 0
   m_RichText: 1
-  m_GlobalFontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_GlobalFontAsset: {fileID: 11400000, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
   m_OnFocusSelectAll: 1
   m_ResetOnDeActivation: 1
   m_KeepTextSelectionVisible: 0
@@ -7995,7 +8019,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
+  m_hasFontAssetChanged: 1
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!222 &1918399980
@@ -8152,8 +8176,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: My Rank
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
+  m_sharedMaterial: {fileID: -8143198849003852948, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
