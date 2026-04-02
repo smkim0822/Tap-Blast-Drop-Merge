@@ -41,10 +41,16 @@ public class GameOverPanel : MonoBehaviour
 
     public void Setup(int currentScore, int bestScore, bool isNewRecord)
     {
-        // 1. 점수 및 타이틀 표기
-        currentScoreText.text = currentScore.ToString("N0");
-        bestScoreText.text = "Best: " + bestScore.ToString("N0");
-        resultLabel.text = isNewRecord ? "<color=yellow>NEW RECORD!</color>" : "Final Score";
+        // 1. 점수 표기
+        if (currentScoreText != null)
+        {
+            currentScoreText.text = currentScore.ToString("N0");
+        }
+
+        if (bestScoreText != null)
+        {
+            bestScoreText.text = bestScore.ToString("N0");
+        }
 
         // 2. 패널 활성화
         gameObject.SetActive(true);
