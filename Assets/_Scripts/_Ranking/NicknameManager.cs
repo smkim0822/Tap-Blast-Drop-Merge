@@ -1,3 +1,5 @@
+using System.Collections;
+using TMPro;
 using UnityEngine;
 
 public class NicknameManager : MonoBehaviour
@@ -5,6 +7,10 @@ public class NicknameManager : MonoBehaviour
     public static NicknameManager Instance;
 
     private const string PREFS_KEY = "PlayerName";
+
+    [Header("UI Reference")]
+    [Tooltip("닉네임 변경 팝업의 InputField 연결")]
+    public TMP_InputField nicknameInput;
 
     private void Awake()
     {
@@ -18,6 +24,36 @@ public class NicknameManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    private void Start()
+    {
+        // 닉네임 입력창 UX 개선
+        if (nicknameInput != null)
+        {
+            // 포커스 시 전체 텍스트 선택 비활성화
+            nicknameInput.onFocusSelectAll = false;
+            
+            // 입력창 활성화 시 커서를 텍스트 맨 끝으로 강제 이동
+            nicknameInput.onSelect.AddListener((string text) =>
+            {
+                StartCoroutine(MoveCursorToEnd());
+            });
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ NicknameManager에 TMP_InputField가 연결되지 않았습니다. 인스펙터를 확인해주세요.");
+        }
+    }
+
+    // 한 프레임 대기 후 커서 이동
+    private IEnumerator MoveCursorToEnd()
+    {
+        // 유니티 내부의 클릭 이벤트 처리가 끝날 때까지 이번 프레임의 끝부분까지 대기
+        yield return new WaitForEndOfFrame();
+
+        // 텍스트의 맨 끝으로 커서 강제 이동
+        nicknameInput.MoveTextEnd(false);
     }
 
     // [핵심 로직] 닉네임 초기화 및 자동 생성
