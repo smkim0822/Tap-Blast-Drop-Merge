@@ -87,7 +87,7 @@ public class Spawner : MonoBehaviour
         guideLine.textureMode = LineTextureMode.Tile;
 
         // 표시선이 테두리 위로 보이는 문제 방지
-        guideLine.sortingOrder = 1;
+        guideLine.sortingOrder = 5;
 
         // 게임 시작 시 초기화
         InitializeQueue();
