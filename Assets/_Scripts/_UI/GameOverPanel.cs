@@ -12,10 +12,12 @@ public class GameOverPanel : MonoBehaviour
 
     [Header("Buttons")]
     public Button retryButton;
+    public Button rankingButton;
     public CanvasGroup retryButtonCanvasGroup; // 버튼 투명도 조절용
 
     [Header("Animation Settings")]
-    public float delayDuration = 1.0f; // 지연 시간
+    public float appearDelay = 0.5f;
+    public float animDuration = 0.3f;
     public AnimationCurve appearanceCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     [Header("Popups")]
@@ -28,6 +30,18 @@ public class GameOverPanel : MonoBehaviour
         if (retryButton != null)
         {
             retryButton.onClick.AddListener(OnRetryClicked);
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (retryButton != null)
+        {
+            retryButton.onClick.RemoveListener(OnRetryClicked);
+        }
+        if (rankingButton != null)
+        {
+            rankingButton.onClick.RemoveListener(OnClickRankingButton);
         }
     }
 
@@ -56,31 +70,39 @@ public class GameOverPanel : MonoBehaviour
         gameObject.SetActive(true);
 
         // 3. 재시작 버튼 지연 애니메이션 시작
-        if (retryEnableCoroutine != null) StopCoroutine(retryEnableCoroutine);
+        if (retryEnableCoroutine != null) 
+        {
+            StopCoroutine(retryEnableCoroutine);
+        }
         retryEnableCoroutine = StartCoroutine(AnimateRetryButton());
     }
 
-private IEnumerator AnimateRetryButton()
+    private IEnumerator AnimateRetryButton()
     {
         // 초기 상태 설정: 버튼 비활성화 및 크기/알파 0
         retryButton.interactable = false;
         retryButton.transform.localScale = Vector3.zero;
         if (retryButtonCanvasGroup != null) 
+        {
             retryButtonCanvasGroup.alpha = 0f;
+        }
+
+        yield return new WaitForSecondsRealtime(appearDelay);
 
         float timer = 0f;
-        
-        while (timer < delayDuration)
+        while (timer < animDuration)
         {
             timer += Time.unscaledDeltaTime; 
             
-            float progress = Mathf.Clamp01(timer / delayDuration); // 1을 넘지 않도록 Clamp
+            float progress = Mathf.Clamp01(timer / animDuration); // 1을 넘지 않도록 Clamp
             float curveValue = appearanceCurve.Evaluate(progress);
 
             // 크기 및 투명도 애니메이션
             retryButton.transform.localScale = Vector3.one * curveValue;
-            if (retryButtonCanvasGroup != null) 
+            if (retryButtonCanvasGroup != null)
+            {
                 retryButtonCanvasGroup.alpha = curveValue;
+            }
 
             yield return null;
         }
@@ -88,8 +110,10 @@ private IEnumerator AnimateRetryButton()
         // 최종 상태 보장 (애니메이션 끝난 후 확실하게 1로 설정)
         retryButton.transform.localScale = Vector3.one;
         if (retryButtonCanvasGroup != null) 
+        {
             retryButtonCanvasGroup.alpha = 1f;
-            
+        }
+
         retryButton.interactable = true;
     }
 

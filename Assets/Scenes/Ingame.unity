@@ -3258,8 +3258,10 @@ MonoBehaviour:
   currentScoreText: {fileID: 1887124760}
   bestScoreText: {fileID: 1975094607}
   retryButton: {fileID: 816349314}
+  rankingButton: {fileID: 0}
   retryButtonCanvasGroup: {fileID: 816349317}
-  delayDuration: 1
+  appearDelay: 0.5
+  animDuration: 0.3
   appearanceCurve:
     serializedVersion: 2
     m_Curve:
@@ -6093,19 +6095,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1468386062}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1275809212}
-        m_TargetAssemblyTypeName: SettingsPopup, Assembly-CSharp
-        m_MethodName: OnClickMusic
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1468386062
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7595,7 +7585,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 820773129}
         m_TargetAssemblyTypeName: MainPanel, Assembly-CSharp
-        m_MethodName: OnClickRankingPopup
+        m_MethodName: OnRankingClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7833,6 +7823,8 @@ GameObject:
   - component: {fileID: 1916613447}
   - component: {fileID: 1916613448}
   - component: {fileID: 1916613449}
+  - component: {fileID: 1916613451}
+  - component: {fileID: 1916613450}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -7932,7 +7924,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c72537415699b54ca7cbf8dfeae4c58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NicknameManager
-  nicknameInput: {fileID: 1769813480}
+--- !u!114 &1916613450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916613443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b85db6b4430de74386ed57a60f7c78d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameEvents
+--- !u!114 &1916613451
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916613443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c4b38650226b0b4a956b955e5388c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PoolManager
 --- !u!1 &1918399977
 GameObject:
   m_ObjectHideFlags: 0
@@ -9087,19 +9102,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2052621979}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1275809212}
-        m_TargetAssemblyTypeName: SettingsPopup, Assembly-CSharp
-        m_MethodName: OnClickSound
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &2052621979
 MonoBehaviour:
   m_ObjectHideFlags: 0

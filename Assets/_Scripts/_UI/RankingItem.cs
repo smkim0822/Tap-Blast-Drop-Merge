@@ -19,30 +19,18 @@ public class RankingItem : MonoBehaviour
         nameText.text = name;
         scoreText.text = score.ToString("N0");
 
-        // 1~3등: 텍스트 숨기고 메달 이미지 활성화
-        if (rank >= 1 && rank <= 3)
-        {
-            rankText.gameObject.SetActive(false);
-            medalImage.gameObject.SetActive(true);
+        bool isTop3 = rank >= 1 && rank <= 3;
 
-            if (rank == 1)
-            {
-                medalImage.sprite = goldMedal;
-            }
-            else if (rank == 2)
-            {
-                medalImage.sprite = silverMedal;
-            }
-            else if (rank == 3)
-            {
-                medalImage.sprite = bronzeMedal;
-            }
+        // 1~3등: 텍스트 숨기고 메달 이미지 활성화
+        rankText.gameObject.SetActive(!isTop3);
+        medalImage.gameObject.SetActive(isTop3);
+
+        if (isTop3)
+        {
+            medalImage.sprite = rank == 1 ? goldMedal : (rank == 2 ? silverMedal : bronzeMedal);
         }
-        // 4등 이하: 메달 숨기고 순위 텍스트 활성화
         else
         {
-            medalImage.gameObject.SetActive(false);
-            rankText.gameObject.SetActive(true);
             rankText.text = rank.ToString();
         }
     }

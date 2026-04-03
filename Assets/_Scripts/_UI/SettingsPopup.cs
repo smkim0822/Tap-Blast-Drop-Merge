@@ -4,7 +4,7 @@ using System.Collections;
 
 public class SettingsPopup : MonoBehaviour
 {
-    [Header("버튼 연결")]
+    [Header("Buttons")]
     [SerializeField] private Button soundButton;
     [SerializeField] private Button musicButton;
     [SerializeField] private Button retryButton;
@@ -12,11 +12,11 @@ public class SettingsPopup : MonoBehaviour
     [SerializeField] private Button closeButton;
     [SerializeField] private Button backgroundButton;
 
-    [Header("아이콘 이미지")]
+    [Header("Icons")]
     [SerializeField] private Image soundIconImage;
     [SerializeField] private Image musicIconImage;
 
-    [Header("교체할 스프라이트 (On/Off)")]
+    [Header("Sprites (On/Off)")]
     [SerializeField] private Sprite soundOnSprite;
     [SerializeField] private Sprite soundOffSprite;
     [SerializeField] private Sprite musicOnSprite;
@@ -24,17 +24,44 @@ public class SettingsPopup : MonoBehaviour
 
     [Header("Animation Settings")]
     [SerializeField] private RectTransform popupWindow;
-    [SerializeField] private AnimationCurve openCurve;
+    [SerializeField] private AnimationCurve openCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
     [SerializeField] private float animDuration = 0.2f;
 
     private bool isSoundOn = true;
     private bool isMusicOn = true;
     private bool isAnimating = false;
 
+    private void Start()
+    {
+        if (soundButton != null)
+        {
+            soundButton.onClick.AddListener(OnClickSound);
+        }
+        if (musicButton != null)
+        {
+            musicButton.onClick.AddListener(OnClickMusic);
+        }
+        if (retryButton != null)
+        {
+            retryButton.onClick.AddListener(OnClickRetry);
+        }
+        if (mainButton != null)
+        {
+            mainButton.onClick.AddListener(OnClickMain);
+        }
+        if (closeButton != null)
+        {
+            closeButton.onClick.AddListener(OnClickClose);
+        }
+    }
+
     // 팝업을 열 때 호출 (외부에서 사용)
     public void Open(bool isIngame)
     {
-        if (isAnimating) return;
+        if (isAnimating)
+        {
+             return;
+        }
 
         gameObject.SetActive(true);
         SetMode(isIngame);
@@ -125,14 +152,20 @@ public class SettingsPopup : MonoBehaviour
     public void OnClickRetry()
     {
         Time.timeScale = 1f;
-        GameManager.Instance.RetryGame();
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.RetryGame();
+        }
         gameObject.SetActive(false);
     }
 
     public void OnClickMain()
     {
         Time.timeScale = 1f;
-        GameManager.Instance.GoToMain();
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.GoToMain();
+        }
         gameObject.SetActive(false);
     }
 
@@ -149,8 +182,14 @@ public class SettingsPopup : MonoBehaviour
 
     private void UpdateUI()
     {
-        soundIconImage.sprite = isSoundOn ? soundOnSprite : soundOffSprite;
-        musicIconImage.sprite = isMusicOn ? musicOnSprite : musicOffSprite;
+        if (soundIconImage != null)
+        {
+            soundIconImage.sprite = isSoundOn ? soundOnSprite : soundOffSprite;
+        }
+        if (musicIconImage != null)
+        {
+            musicIconImage.sprite = isMusicOn ? musicOnSprite : musicOffSprite;
+        }
     }
 
     private void SaveSettings()
@@ -169,15 +208,13 @@ public class SettingsPopup : MonoBehaviour
     // 메인화면/인게임에 따라 버튼 보여주기
     public void SetMode(bool isIngame)
     {
-        if (isIngame)
+        if (retryButton != null)
         {
-            retryButton.gameObject.SetActive(true);
-            mainButton.gameObject.SetActive(true);
+            retryButton.gameObject.SetActive(isIngame);
         }
-        else
+        if (mainButton != null)
         {
-            retryButton.gameObject.SetActive(false);
-            mainButton.gameObject.SetActive(false);
+            mainButton.gameObject.SetActive(isIngame);
         }
     }
 }

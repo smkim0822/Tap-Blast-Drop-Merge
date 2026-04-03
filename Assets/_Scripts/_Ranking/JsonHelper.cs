@@ -11,6 +11,13 @@ public static class JsonHelper
         return wrapper.array;
     }
 
+    public static string ToJson<T>(T[] array, bool prettyPrint = false)
+    {
+        Wrapper<T> wrapper = new Wrapper<T>();
+        wrapper.array = array;
+        return JsonUtility.ToJson(wrapper, prettyPrint);
+    }
+
     [Serializable]
     private class Wrapper<T>
     {

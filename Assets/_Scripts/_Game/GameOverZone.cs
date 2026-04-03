@@ -9,7 +9,7 @@ public class GameOverZone : MonoBehaviour
     public Color warningColor = Color.red;
 
     [Header("Logic Settings")]
-    public float limitTime = 1.0f;
+    public float limitTime = 3.0f;
 
     private float timer = 0f;
     private float blinkPhase = 0f;  //  깜빡임 전용 내부 시계
@@ -19,7 +19,13 @@ public class GameOverZone : MonoBehaviour
     void Update()
     {
         // 파괴된 공 정리
-        stackList.RemoveAll(item => item == null);
+        for (int i = stackList.Count - 1; i >= 0; i--)
+        {
+            if (stackList[i] == null || !stackList[i].activeInHierarchy)
+            {
+                stackList.RemoveAt(i);
+            }
+        }
 
         // 상태 판별
         bool isDanger = stackList.Count > 0;
@@ -70,10 +76,8 @@ public class GameOverZone : MonoBehaviour
         timer = 0f;
         blinkPhase = 0f;
         stackList.Clear();
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.TriggerGameOver();
-        }
+        
+        GameEvents.OnGameOver?.Invoke();
     }
 
     // 닿으면 명단에 추가

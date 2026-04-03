@@ -34,10 +34,10 @@ public class RankingPopup : MonoBehaviour
     public float keyboardOffsetY = 400f;    // 키보드가 올라올 때 위로 이동할 Y값
     public float moveAnimDuration = 0.2f;   // 이동 애니메이션 속도
 
-    private Coroutine moveCoroutine;
-    private RectTransform editPopupRect;
-
     private bool isAnimating = false;
+    private bool isEditPopupClosing = false;
+    private RectTransform editPopupRect;
+    private Coroutine moveCoroutine;
     private Coroutine editAnimCoroutine;
     private Coroutine syncRoutine;
 
@@ -65,6 +65,7 @@ public class RankingPopup : MonoBehaviour
 
         if (nameInput != null)
         {
+            nameInput.onFocusSelectAll = false;
             nameInput.onSelect.AddListener(OnInputSelect);
             nameInput.onDeselect.AddListener(OnInputDeselect);
         }
@@ -82,14 +83,11 @@ public class RankingPopup : MonoBehaviour
             saveNameButton.interactable = true;
         }
 
-        // 모달 UI 생명주기 초기화
-        // 랭킹 팝업이 활성화될 때 닉네임 팝업을 명시적으로 닫음
-        CloseEditNamePopup();
-        
-        if (!isAnimating)
+        if (editPopupRoot != null)
         {
-            RefreshRanking();
+            editPopupRoot.SetActive(false);
         }
+        isEditPopupClosing = false;
     }
 
     public void OpenPopup()
@@ -104,30 +102,31 @@ public class RankingPopup : MonoBehaviour
         }
         
         RefreshRanking();
-        StartCoroutine(AnimateOpen());
+        StartCoroutine(AnimateScale(popupWindow, Vector3.zero, Vector3.one, animDuration, openCurve, () => isAnimating = false));
     }
 
     public void ClosePopup()
     {
-        if (isAnimating) return;
-        StartCoroutine(AnimateClose());
+        if (isAnimating)
+        {
+            return;
+        }
+        StartCoroutine(AnimateScale(popupWindow, popupWindow.localScale, Vector3.zero, animDuration, null, () => gameObject.SetActive(false)));
     }
 
     // 오프라인 강제 전환 함수
     private void TriggerOfflineFallback()
     {
-        foreach (Transform child in contentParent)
-        {
-            Destroy(child.gameObject);
-        }
-
+        ClearRankingItems();
         if (offlineMessageObject != null)
         {
             offlineMessageObject.SetActive(true);
         }
         
-        // 로컬 닉네임과 최고 점수를 UI에 강제 렌더링
-        ShowNetworkErrorStatus();
+        // 로컬 데이터를 UI에 강제 렌더링
+        string currentName = NicknameManager.Instance?.GetNickname() ?? PlayerPrefs.GetString("PlayerName", "Guest");
+        int localHighScore = PlayerPrefs.GetInt("BestScore", 0);
+        UpdateMyRankUI(null, $"{currentName} <size=70%><color=#FF7B7B>(Offline)</color></size>", localHighScore);
     }
 
     public void RefreshRanking()
@@ -137,22 +136,15 @@ public class RankingPopup : MonoBehaviour
             StopCoroutine(syncRoutine);
         }
 
-        if (RankingManager.Instance != null)
+        if (RankingManager.Instance == null || !RankingManager.Instance.IsNetworkReached())
         {
-            // 네트워크 상태에 따른 분기 처리
-            if (!RankingManager.Instance.IsNetworkReached())
-            {
-                TriggerOfflineFallback();
-                return;
-            }
+            TriggerOfflineFallback();
+            return;
+        }
 
-            // 온라인 상태일 때
-            if (offlineMessageObject != null)
-            {
-                offlineMessageObject.SetActive(false);
-            }
-
-            // 코루틴 참조 저장
+        if (offlineMessageObject != null)
+        {
+            offlineMessageObject.SetActive(false);
             syncRoutine = StartCoroutine(SyncAndLoadRankingRoutine());
         }
     }
@@ -167,7 +159,10 @@ public class RankingPopup : MonoBehaviour
         // 서버에서 데이터 가져오기
         StartCoroutine(RankingManager.Instance.GetMyRank((success, data) =>
         {
-            if (!success) isNetworkError = true;
+            if (!success)
+            {
+                isNetworkError = true;
+            }
             serverMyData = data;
             isMyRankLoaded = true;
         }));
@@ -176,61 +171,28 @@ public class RankingPopup : MonoBehaviour
 
         if (isNetworkError)
         {
-            Debug.LogWarning("⚠️ 실제 통신 실패가 감지되어 로컬 데이터를 강제 로드합니다.");
             TriggerOfflineFallback();
             yield break;
         }
 
         // 로컬에 저장된 정보 가져오기
-        string localName = NicknameManager.Instance != null ? NicknameManager.Instance.GetNickname() : PlayerPrefs.GetString("PlayerName", "Guest");
+        string localName = NicknameManager.Instance?.GetNickname() ?? PlayerPrefs.GetString("PlayerName", "Guest");
         int localHighScore = PlayerPrefs.GetInt("BestScore", 0);
 
-        bool needsNicknameSync = false;
-        bool needsScoreSync = false;
+        bool needsNicknameSync = serverMyData == null || localName != serverMyData.name;
+        bool needsScoreSync = serverMyData == null ? (localHighScore > 0) : (localHighScore > serverMyData.score);
 
-        // 서버 데이터와 로컬 데이터 비교
-        if (serverMyData == null)
-        {
-            // 서버에 기록이 없는 신규 유저
-            needsNicknameSync = true;
-            if (localHighScore > 0)
-            {
-                needsScoreSync = true;
-            }
-        }
-        else
-        {
-            // 오프라인에서 이름 변경한 경우
-            if (localName != serverMyData.name)
-            {
-                needsNicknameSync = true;
-            }
-            // 오프라인에서 최고 기록 세운 경우
-            if (localHighScore > serverMyData.score)
-            {
-                needsScoreSync = true;
-            }
-        }
-
-        // 동기화가 필요하다면 업데이트
         if (needsNicknameSync || needsScoreSync)
         {
-            Debug.Log("🔄 [지연 동기화] 오프라인에서 변경된 데이터를 서버에 업데이트합니다.");
-
-            // 닉네임 동기화 대기
             if (needsNicknameSync)
             {
                 yield return StartCoroutine(RankingManager.Instance.UpdateNickname(localName));
             }
-
-            // 점수 동기화 대기
             if (needsScoreSync)
             {
                 yield return StartCoroutine(RankingManager.Instance.PostScore(localHighScore));
-                Debug.Log($"✔️ 오프라인 신기록 {localHighScore}점을 서버로 전송했습니다!");
             }
 
-            // 최신화된 정보 가져오기
             isMyRankLoaded = false;
             StartCoroutine(RankingManager.Instance.GetMyRank((success, data) =>
             {
@@ -240,8 +202,8 @@ public class RankingPopup : MonoBehaviour
             yield return new WaitUntil(() => isMyRankLoaded);
         }
 
-        // 동기화가 끝난 상태에서 UI 갱신
-        UpdateMyRankUI(serverMyData, localName);
+        UpdateMyRankUI(serverMyData, localName, localHighScore);
+
         StartCoroutine(RankingManager.Instance.GetRanks((success, ranks) =>
         {
             if (success)
@@ -255,92 +217,53 @@ public class RankingPopup : MonoBehaviour
         }));
     }
 
-    // UI 전용 함수
-    private void UpdateMyRankUI(MyRankData myData, string localName)
+    private void UpdateMyRankUI(MyRankData myData, string displayName, int localBest = -1)
     {
-        int localBest = PlayerPrefs.GetInt("BestScore", 0);
-
-        if (myData == null)
+        if (localBest == -1)
         {
-            if (myNameText != null)
-            {
-                myNameText.text = localName;
-            }
-            if (myRankText != null)
-            {
-                myRankText.text = "-";
-            }
-            if (myScoreText != null)
-            {
-                myScoreText.text = localBest.ToString("N0");
-            }
-        }
-        else
-        {
-            if (myNameText != null)
-            {
-                myNameText.text = myData.name;
-            }
-            if (myRankText != null)
-            {
-                myRankText.text = myData.rank > 0 ? myData.rank.ToString() : "-";
-            }
-            
-            int displayScore = Mathf.Max(myData.score, localBest);
-            if (myScoreText != null)
-            {
-                myScoreText.text = displayScore.ToString("N0");
-            }
-        }
-    }
-
-    // 네트워크 에러 발생 시 UI 피드백
-    private void ShowNetworkErrorStatus()
-    {
-        // 로컬에 저장된 닉네임 가져오기
-        string currentName = PlayerPrefs.GetString("PlayerName", "Guest");
-        if (NicknameManager.Instance != null)
-        {
-            currentName = NicknameManager.Instance.GetNickname();
+            localBest = PlayerPrefs.GetInt("BestScore", 0);
         }
 
-        // 로컬에서 최고 점수 가져오기
-        int localHighScore = PlayerPrefs.GetInt("BestScore", 0);
-
-        // UI에 적용
         if (myNameText != null)
         {
-            myNameText.text = $"{currentName} <size=70%><color=#FF7B7B>(Offline)</color></size>";
+            string finalName = (myData != null && !string.IsNullOrEmpty(myData.name)) ? myData.name : displayName;
+            myNameText.text = finalName;
         }
 
         if (myRankText != null)
         {
-            myRankText.text = "-";
+            myRankText.text = (myData != null && myData.rank > 0) ? myData.rank.ToString() : "-";
         }
 
+        int displayScore = myData != null ? Mathf.Max(myData.score, localBest) : localBest;
         if (myScoreText != null)
         {
-            myScoreText.text = localHighScore.ToString("N0");
+            myScoreText.text = displayScore.ToString("N0");
         }
+    
     }
 
-    void OnDataReceived(ScoreData[] ranks)
+    private void ClearRankingItems()
     {
         foreach (Transform child in contentParent)
         {
             Destroy(child.gameObject);
         }
+    }
+
+    void OnDataReceived(ScoreData[] ranks)
+    {
+        ClearRankingItems();
         
-        if (ranks == null || ranks.Length == 0) return;
+        if (ranks == null || ranks.Length == 0)
+        {
+            return;
+        }
 
         for (int i = 0; i < ranks.Length; i++)
         {
-            int rank = i + 1;
-            string playerName = ranks[i].name;
-            int score = ranks[i].score;
-
             RankingItem newItem = Instantiate(itemPrefab, contentParent);
-            newItem.SetData(rank, playerName, score);
+            newItem.SetData(i + 1, ranks[i].name, ranks[i].score);
         }
     }
 
@@ -348,62 +271,70 @@ public class RankingPopup : MonoBehaviour
 
     private void OpenEditNamePopup()
     {
-        if (editPopupRoot != null)
+        if (editPopupRoot == null)
         {
-            editPopupRoot.SetActive(true);
-
-            // 위치 초기화
-            if (editPopupRect != null)
-            {
-                editPopupRect.anchoredPosition = Vector2.zero;
-            }
-
-            // 입력창에 현재 닉네임을 미리 적어줌
-            if (NicknameManager.Instance != null)
-            {
-                nameInput.text = NicknameManager.Instance.GetNickname();
-            }
-
-            // 애니메이션
-            if (editAnimCoroutine != null)
-            {
-                StopCoroutine(editAnimCoroutine);
-            }
-
-            editAnimCoroutine = StartCoroutine(CoAnimateEditPopup(Vector3.zero, Vector3.one, null));
+            return;
         }
+        editPopupRoot.SetActive(true);
+        isEditPopupClosing = false;
+
+        if (editPopupRect != null)
+        {
+            editPopupRect.anchoredPosition = Vector2.zero;
+        }
+        if (nameInput != null)
+        {
+            nameInput.text = NicknameManager.Instance?.GetNickname();
+        }
+
+        if (editAnimCoroutine != null)
+        {
+            StopCoroutine(editAnimCoroutine);
+        }
+
+        Vector3 startScale = editPopupContent.localScale;
+        if (startScale == Vector3.one)
+        {
+            startScale = Vector3.zero;
+        }
+
+        editAnimCoroutine = StartCoroutine(AnimateScale(editPopupContent.GetComponent<RectTransform>(), Vector3.zero, Vector3.one, editPopupAnimDuration));
     }
 
     public void CloseEditNamePopup()
     {
         // 이미 꺼져있으면 무시
-        if (editPopupRoot == null || !editPopupRoot.activeSelf)
+        if (editPopupRoot == null || !editPopupRoot.activeSelf || isEditPopupClosing)
         {
             return;
         }
 
+        isEditPopupClosing = true;
         // 애니메이션
         if (editAnimCoroutine != null)
         {
             StopCoroutine(editAnimCoroutine);
         }
 
-        editAnimCoroutine = StartCoroutine(CoAnimateEditPopup(Vector3.one, Vector3.zero, () =>
+        editAnimCoroutine = StartCoroutine(AnimateScale(editPopupContent.GetComponent<RectTransform>(), editPopupContent.localScale, Vector3.zero, editPopupAnimDuration, null, () =>
         {
             editPopupRoot.SetActive(false);
-        }));
+            isEditPopupClosing = false;
+        }));     
     }
 
     private void SaveNewNickname()
     {
-        if (nameInput == null || (saveNameButton != null && !saveNameButton.interactable)) return;
+        if (nameInput == null || (saveNameButton != null && !saveNameButton.interactable)) 
+        {
+            return;
+        }
 
         string newName = nameInput.text;
 
         // 유효성 검사 (글자 수 제한)
         if (string.IsNullOrWhiteSpace(newName) || newName.Length > 10)
         {
-            Debug.LogWarning($"⚠️ 닉네임 변경 실패: 길이가 유효하지 않습니다. (현재 길이: {newName.Length}자). API 호출을 차단합니다.");
             return;
         }
 
@@ -411,14 +342,11 @@ public class RankingPopup : MonoBehaviour
         StartCoroutine(ButtonCooldownRoutine());
 
         // 매니저를 통해 저장 (매니저 내부에서 유효성 검사 수행함)
-        if (NicknameManager.Instance != null)
+        if (NicknameManager.Instance != null && NicknameManager.Instance.SetNickname(newName))
         {
-            NicknameManager.Instance.SetNickname(newName);
+            CloseEditNamePopup();
+            StartCoroutine(SyncNicknameAndRefresh(newName));
         }
-
-        // UI 즉시 갱신 및 팝업 닫기
-        CloseEditNamePopup();
-        StartCoroutine(SyncNicknameAndRefresh(newName));
     }
 
     // 닉네임 변경 쿨타임 코루틴
@@ -426,10 +354,11 @@ public class RankingPopup : MonoBehaviour
     {
         if (saveNameButton != null)
         {
-            saveNameButton.interactable = false;    // 즉시 비활성화
-            yield return new WaitForSecondsRealtime(3f);    // 3초 대기
-            saveNameButton.interactable = true;    // 복구
+            yield break;
         }
+        saveNameButton.interactable = false;    // 즉시 비활성화
+        yield return new WaitForSecondsRealtime(3f);    // 3초 대기
+        saveNameButton.interactable = true;    // 복구
     }
 
     // 서버 통신이 끝날 때까지 기다렸다가 UI를 새로고침하는 코루틴
@@ -452,90 +381,46 @@ public class RankingPopup : MonoBehaviour
         RefreshRanking();
     }
 
-    // --- 애니메이션 로직 ---
-
-    // 닉네임 에딧 팝업 애니메이션 코루틴
-    private IEnumerator CoAnimateEditPopup(Vector3 startScale, Vector3 endScale, Action onComplete)
+    // 애니메이션 로직
+    private IEnumerator AnimateScale(RectTransform target, Vector3 start, Vector3 end, float duration, AnimationCurve curve = null, Action onComplete = null)
     {
-        if (editPopupContent == null)
-        {
-            yield break;
-        }
-
+        isAnimating = true;
         float elapsed = 0f;
-        editPopupContent.localScale = startScale;
+        target.localScale = start;
 
-        while (elapsed < editPopupAnimDuration)
+        while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
-            float t = elapsed / editPopupAnimDuration;
+            float t = elapsed / duration;
 
-            // 자연스러운 감속(Ease Out Cubic)
-            float easeT = 1f - Mathf.Pow(1f - t, 3f);
-
-            editPopupContent.localScale = Vector3.Lerp(startScale, endScale, easeT);
+            float evalT = curve != null ? curve.Evaluate(t) : (1f - Mathf.Pow(1f - t, 3f));
+            target.localScale = Vector3.LerpUnclamped(start, end, evalT);
             yield return null;
         }
 
-        editPopupContent.localScale = endScale;
+        target.localScale = end;
+        isAnimating = false;
         onComplete?.Invoke();
     }
 
-    IEnumerator AnimateOpen()
-    {
-        isAnimating = true;
-
-        float timer = 0f;
-        popupWindow.localScale = Vector3.zero;
-
-        while (timer < animDuration)
-        {
-            timer += Time.unscaledDeltaTime;
-            float progress = timer / animDuration;
-            float curveValue = openCurve.Evaluate(progress);
-
-            popupWindow.localScale = new Vector3(curveValue, curveValue, 1f);
-            yield return null;
-        }
-
-        popupWindow.localScale = Vector3.one;
-        isAnimating = false;
-    }
-
-    IEnumerator AnimateClose()
-    {
-        isAnimating = true;
-
-        float timer = 0f;
-        Vector3 startScale = popupWindow.localScale;
-
-        while (timer < animDuration)
-        {
-            timer += Time.unscaledDeltaTime;
-            float progress = timer / animDuration;
-
-            popupWindow.localScale = Vector3.Lerp(startScale, Vector3.zero, progress);
-            yield return null;
-        }
-
-        popupWindow.localScale = Vector3.zero;
-        isAnimating = false;
-
-        gameObject.SetActive(false);
-    }
-
-    // --- 키보드 위치 이동 로직 ---
-
+    // --- 키보드 UX 및 커서 이동 로직 ---
     private void OnInputSelect(string text)
     {
         // 입력창 터치 시 위로 이동
         MovePopupY(keyboardOffsetY);
+        StartCoroutine(MoveCursorToEndRoutine());
     }
 
     private void OnInputDeselect(string text)
     {
         // 입력 종료 시 원래 자리로 복구
         MovePopupY(0f);
+    }
+
+    private IEnumerator MoveCursorToEndRoutine()
+    {
+        yield return new WaitForEndOfFrame();
+        nameInput.MoveTextEnd(false);
     }
 
     private void MovePopupY(float targetY)

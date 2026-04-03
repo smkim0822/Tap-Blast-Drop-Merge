@@ -3,15 +3,15 @@ using UnityEngine;
 public class BombLogic : MonoBehaviour
 {
     [Header("Basic Settings")]
-    public GameObject grainPrefab;  // 알갱이 프리팹
-    public int grainCount = 15;     // 생성 개수
+    public GameObject grainPrefab;
+    public int grainCount = 15;         // 생성 개수
     public float explosionForce = 3.0f; // 퍼지는 힘
 
     [Header("Size Settings")]
-    public float minSize = 0.1f;    // 최소 크기
-    public float maxSize = 0.6f;    // 최대 크기
+    public float minSize = 0.1f;        // 최소 크기
+    public float maxSize = 0.6f;        // 최대 크기
 
-    // 폭탄 번호 (static이라서 게임 꺼도 유지됨 -> 초기화 필요)
+    // 폭탄 번호
     public static int globalBatchIdCounter = 0;
 
     // 배치 ID 초기화 함수 (GameManager에서 호출)
@@ -28,6 +28,12 @@ public class BombLogic : MonoBehaviour
     void Awake()
     {
         myRenderer = GetComponent<SpriteRenderer>();
+    }
+
+    // 풀링 재활용을 위해 활성화될 때 폭발 플래그 초기화
+    void OnEnable()
+    {
+        hasExploded = false;
     }
 
     public void Initialize(Sprite elementSprite, Color effectColor)
@@ -70,7 +76,7 @@ public class BombLogic : MonoBehaviour
         {
             // 랜덤 위치 생성
             Vector3 randomPos = transform.position + (Vector3)(Random.insideUnitCircle * 0.4f);
-            GameObject grain = Instantiate(grainPrefab, randomPos, Quaternion.identity);
+            GameObject grain = PoolManager.Instance.Spawn(grainPrefab, randomPos, Quaternion.identity); // 풀링
 
             // 크기 랜덤 설정
             float randomScale = Random.Range(minSize, maxSize);
@@ -98,7 +104,7 @@ public class BombLogic : MonoBehaviour
             }
         }
 
-        // 폭탄 삭제
-        Destroy(gameObject);
+        // 폭탄 반환
+        PoolManager.Instance.Despawn(gameObject);
     }
 }

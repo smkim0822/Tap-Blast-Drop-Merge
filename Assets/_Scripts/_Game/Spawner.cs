@@ -69,24 +69,20 @@ public class Spawner : MonoBehaviour
         {
             originalScale = Vector3.one;
         }
-    }
 
-    void Start()
-    {
         mainCam = Camera.main;
         spawnerRenderer = GetComponent<SpriteRenderer>();
-
-        // 라인 렌더러 초기화
         if (guideLine == null)
         {
             guideLine = GetComponent<LineRenderer>();
         }
+    }
+
+    void Start()
+    {
         guideLine.positionCount = 2;
         guideLine.enabled = false;
-
         guideLine.textureMode = LineTextureMode.Tile;
-
-        // 표시선이 테두리 위로 보이는 문제 방지
         guideLine.sortingOrder = 5;
 
         // 게임 시작 시 초기화
@@ -96,27 +92,35 @@ public class Spawner : MonoBehaviour
 
     void Update()
     {
-        if (Time.timeScale == 0) return;
-
-        if (IsPointerOverUI()) return;
-
-        if (isReloading) return;
+        if (Time.timeScale == 0 || isReloading || IsPointerOverUI())
+        {
+            return;
+        }
 
         HandleInput();
 
         // 드래그 중일 때만 표시선 표시
-        if (isDragging) DrawGuideLine();
-        else guideLine.enabled = false;
+        if (isDragging) 
+        {
+            DrawGuideLine();
+        }
+        else 
+        {
+            guideLine.enabled = false;
+        }
     }
 
     // 입력이 UI 위인지 판별하는 함수
     private bool IsPointerOverUI()
     {
-        if (EventSystem.current.IsPointerOverGameObject()) return true;
-
-        if (Input.touchCount > 0)
+        if (EventSystem.current.IsPointerOverGameObject())
         {
-            if (EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId)) return true;
+            return true;
+        }
+
+        if (Input.touchCount > 0 && EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+        {
+            return true;
         }
 
         return false;
@@ -181,16 +185,14 @@ public class Spawner : MonoBehaviour
         // 폭탄 생성
         if (bombPrefab != null)
         {
-            GameObject newBomb = Instantiate(bombPrefab, transform.position, Quaternion.identity);
+            GameObject newBomb = PoolManager.Instance.Spawn(bombPrefab, transform.position, Quaternion.identity);
 
+            // 초기 크기 지정 후 코루틴 애니메이션
             Vector3 realScale = newBomb.transform.localScale;
-
             newBomb.transform.localScale = Vector3.zero;
-
             StartCoroutine(AnimateSpawn(newBomb.transform, realScale));
 
             BombLogic bombLogic = newBomb.GetComponent<BombLogic>();
-            
             if (bombLogic != null)
             {
                 bombLogic.Initialize(currentElement.sprite, currentElement.color);

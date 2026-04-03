@@ -171,7 +171,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   batchId: -1
   popSound: {fileID: 8300000, guid: b482bb15565b2a14ca25a32313086f43, type: 3}
-  explosionEffect: {fileID: 290198698698734281, guid: 983fc9bd75ff71549bcd3e10b7355429, type: 3}
+  explosionEffectPrefab: {fileID: 7080065035502040843, guid: 983fc9bd75ff71549bcd3e10b7355429, type: 3}
   scoreMultiplier: 1
   scoreGrowthRate: 0.05
   floatingTextPrefab: {fileID: 3365603948138590316, guid: cab478d899d902f4d9c4e0693d819b6f, type: 3}

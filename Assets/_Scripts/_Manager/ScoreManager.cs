@@ -44,6 +44,17 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
+    // --- 점수 추가 이벤트 구독 설정 ---
+    private void OnEnable()
+    {
+        GameEvents.OnScoreAdded += AddScore;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.OnScoreAdded -= AddScore;
+    }
+
     void Start()
     {
         // 저장된 최고 점수 불러오기

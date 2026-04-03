@@ -34,6 +34,18 @@ public class SoundManager : MonoBehaviour
         InitializeSettings();
     }
 
+    // --- 사운드 재생 이벤트 구독 설정 ---
+    private void OnEnable()
+    {
+        GameEvents.OnPlaySFX += PlaySFX;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.OnPlaySFX -= PlaySFX;
+    }
+    // ------
+
     private void InitializeSettings()
     {
         isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
@@ -49,14 +61,11 @@ public class SoundManager : MonoBehaviour
         }
     }
 
-    // --- 외부 호출용 메서드 ---
-
     public void PlaySFX(AudioClip clip, float volume = 1.0f)
     {
-        // 1. 기본 체크
         if (!isSoundOn || clip == null || sfxSource == null) return;
 
-        // 2. 쿨타임 체크
+        // 쿨타임 체크
         if (lastPlayedTimes.ContainsKey(clip))
         {
             float lastTime = lastPlayedTimes[clip];
@@ -66,10 +75,10 @@ public class SoundManager : MonoBehaviour
             }
         }
 
-        // 3. 재생 시간 갱신
+        // 재생 시간 갱신
         lastPlayedTimes[clip] = Time.time;
 
-        // 4. 피치 랜덤 변화 (기계음 방지)
+        // 피치 랜덤 변화 (기계음 방지)
         if (usePitchVariation)
         {
             sfxSource.pitch = Random.Range(0.9f, 1.1f);
@@ -79,7 +88,7 @@ public class SoundManager : MonoBehaviour
             sfxSource.pitch = 1.0f;
         }
 
-        // 5. 재생
+        // 재생
         sfxSource.PlayOneShot(clip, volume);
     }
 

@@ -26,6 +26,18 @@ public class GameManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
+    // --- 게임 오버 이벤트 구독 설정 ---
+    private void OnEnable()
+    {
+        GameEvents.OnGameOver += TriggerGameOver;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.OnGameOver -= TriggerGameOver;
+    }
+    // ------
+
     void Start()
     {
         EnterMainState();
@@ -98,19 +110,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 데이터 초기화
+    // 데이터 초기화 (재시작 및 메인 화면 이동 시 호출)
     public void ResetData()
     {
-        // 0. 배치 ID(점수 배율) 초기화
+        // 배치 ID(점수 배율) 초기화
         BombLogic.ResetBatchId();
 
-        // 1. 점수 초기화
+        // 점수 초기화
         if (ScoreManager.Instance != null) 
         {
             ScoreManager.Instance.ResetScore();
         }
         
-        // 2. 맵 초기화
+        // 맵 초기화
         GameObject[] stacks = GameObject.FindGameObjectsWithTag("Stack");
         if (stacks != null)
         {
@@ -118,58 +130,54 @@ public class GameManager : MonoBehaviour
             {
                 if (obj.GetComponent<GrainLogic>() != null)
                 {
-                    Destroy(obj);
+                    PoolManager.Instance.Despawn(obj);
                 }
             }
         }
 
-        // 3. 폭탄 제거
+        // 폭탄 제거
         BombLogic[] fallingBombs = FindObjectsByType<BombLogic>(FindObjectsSortMode.None);
         foreach (BombLogic bomb in fallingBombs)
         {
-            Destroy(bomb.gameObject);
+            PoolManager.Instance.Despawn(bomb.gameObject);
         }
 
-        // 4. 이펙트 제거
+        // 이펙트 제거
         GameObject[] effects = GameObject.FindGameObjectsWithTag("Effect");
         if (effects != null)
         {
             foreach (GameObject effect in effects)
             {
-                Destroy(effect);
+                PoolManager.Instance.Despawn(effect);
             }
         }
     }
 
-    // 버튼 함수
-
     // [재시작] : 데이터 리셋 + 바로 게임 시작
     public void RetryGame()
     {
-        // 딜레이 중이면 클릭 무시
         if (!canRetry) return;
 
-        ResetData();      // 점수, 위치 초기화
-        EnterPlayState(); // 게임 시작
+        ResetData();
+        EnterPlayState();
     }
 
     // [메인으로] : 데이터 리셋 + 메인 화면 이동
     public void GoToMain()
     {
-        if (!canRetry) return; // 메인으로 가는 것도 게임오버 직후 실수 방지
+        if (!canRetry) return;
 
-        ResetData();      // 점수, 위치 초기화
-        EnterMainState(); // 메인 화면 이동
+        ResetData();
+        EnterMainState();
     }
 
-    // 게임 오버 (여기가 핵심!)
+    // 게임 오버
     public void TriggerGameOver()
     {
         Time.timeScale = 0; // 정지
 
         // 즉시 재시작 방지 Lock
         canRetry = false;
-        // Invoke 대신 Realtime 코루틴 시작
         StartCoroutine(EnableRetryRoutine());
 
         // 점수 가져오기
@@ -177,7 +185,7 @@ public class GameManager : MonoBehaviour
         int best = PlayerPrefs.GetInt("BestScore", 0);
         bool isNewRecord = false;
 
-        // 로컬 최고 기록 갱신 (내 폰에 저장)
+        // 로컬 최고 기록 갱신
         if (current > best)
         {
             best = current;
@@ -186,18 +194,15 @@ public class GameManager : MonoBehaviour
             isNewRecord = true;
         }
 
-        // ==========================================
-        // 🔥 [서버 연동 추가] 서버로 점수 전송 🔥
-        // ==========================================
+        // [서버 연동] 서버로 점수 전송
         if (RankingManager.Instance != null)
         {
             StartCoroutine(RankingManager.Instance.PostScore(current));
         }
-        // ==========================================
 
         if (gamePlayUI != null)
         {
-            gamePlayUI.SetActive(false);   // 인게임 UI 숨김
+            gamePlayUI.SetActive(false);
         }
         if (gameOverPanel != null)
         {
