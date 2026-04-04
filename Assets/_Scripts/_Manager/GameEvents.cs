@@ -2,7 +2,7 @@ using UnityEngine;
 using System;
 
 // 게임 내 이벤트 관리
-public class GameEvents : MonoBehaviour
+public static class GameEvents
 {
     // 점수 획득 이벤트 (매개변수: 획득한 점수)
     public static Action<int> OnScoreAdded;
@@ -12,4 +12,7 @@ public class GameEvents : MonoBehaviour
 
     // 게임 오버 이벤트
     public static Action OnGameOver;
+
+    // 게임 (재)시작 이벤트
+    public static Action OnGameStart;
 }

@@ -5,20 +5,26 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
-    [Header("UI Controllers")]
+    [Header("UI Controllers (UI 컨트롤러)")]
+    [Tooltip("메인 화면 패널")]
     public MainPanel mainPanel;
+    [Tooltip("게임 오버 패널")]
     public GameOverPanel gameOverPanel;
 
-    [Header("Game Objects")]
-    public GameObject gamePlayGroup;    // 인게임 전체 그룹 (배경 등)
-    public GameObject gamePlayUI;       // 인게임 UI
+    [Header("Game Objects (게임 오브젝트)")]
+    [Tooltip("인게임 환경 그룹")]
+    public GameObject gamePlayGroup;
+    [Tooltip("인게임 UI")]
+    public GameObject gamePlayUI;
 
-    [Header("Player")]
-    public GameObject player;           // 플레이어 오브젝트
-    public Transform playerStartPos;    // 플레이어 시작 위치
+    [Header("Player (플레이어)")]
+    [Tooltip("플레이어 오브젝트")]
+    public GameObject player;
+    [Tooltip("플레이어 시작 위치")]
+    public Transform playerStartPos;
 
-    // 재시작 딜레이를 위한 플래그
-    private bool canRetry = true;
+    // 내부 상태 변수
+    private bool canRetry = true;   // 재시작 버튼 활성화 여부
 
     void Awake()
     {
@@ -26,12 +32,17 @@ public class GameManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    // --- 게임 오버 이벤트 구독 설정 ---
+    /// <summary>
+    /// 이벤트 구독: 게임 오버 이벤트 발생 시 TriggerGameOver를 실행하도록 등록
+    /// </summary>
     private void OnEnable()
     {
         GameEvents.OnGameOver += TriggerGameOver;
     }
 
+    /// <summary>
+    /// 이벤트 해제: 오브젝트 파괴/비활성화 시 메모리 누수 방지를 위해 구독 해제
+    /// </summary>
     private void OnDisable()
     {
         GameEvents.OnGameOver -= TriggerGameOver;
@@ -40,6 +51,7 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        // 게임 시작 시 메인 화면 상태로 진입
         EnterMainState();
 
         // 게임 시작 시 서버와 최고 점수 동기화
@@ -47,6 +59,10 @@ public class GameManager : MonoBehaviour
     }
 
     // --- 서버 데이터 동기화 로직 ---
+
+    /// <summary>
+    /// 서버로부터 현재 사용자의 최고 점수를 가져와 로컬 데이터와 동기화
+    /// </summary>
     private void SyncBestScoreWithServer()
     {
         if (RankingManager.Instance != null)
@@ -55,6 +71,11 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 서버 점수 수신 콜백: 서버 점수가 로컬 기록보다 높으면 로컬을 갱신
+    /// </summary>
+    /// <param name="success"></param>
+    /// <param name="myData"></param>
     private void OnSyncMyRankReceived(bool success, MyRankData myData)
     {
         if (!success || myData == null) return;
@@ -75,26 +96,33 @@ public class GameManager : MonoBehaviour
             }
         }
     }
-    // ------
 
-    // 상태 전환
+    // --- 상태 전환 로직 ---
 
+    /// <summary>
+    /// 게임 로비 상태로 전환
+    /// </summary>
     public void EnterMainState()
     {
         Time.timeScale = 1f;
-        mainPanel.gameObject.SetActive(true);
-        gameOverPanel.gameObject.SetActive(false);
-        gamePlayGroup.SetActive(false);
-        gamePlayUI.SetActive(false);
+
+        if (mainPanel != null) mainPanel.gameObject.SetActive(true);
+        if (gameOverPanel != null) gameOverPanel.gameObject.SetActive(false);
+        if (gamePlayGroup != null) gamePlayGroup.SetActive(false);
+        if (gamePlayUI != null) gamePlayUI.SetActive(false);
     }
 
+    /// <summary>
+    /// 실제 게임 플레이 상태로 진입
+    /// </summary>
     public void EnterPlayState()
     {
         Time.timeScale = 1f;
-        mainPanel.gameObject.SetActive(false);
-        gameOverPanel.gameObject.SetActive(false);
-        gamePlayGroup.SetActive(true);
-        gamePlayUI.SetActive(true);
+
+        if (mainPanel != null) mainPanel.gameObject.SetActive(false);
+        if (gameOverPanel != null) gameOverPanel.gameObject.SetActive(false);
+        if (gamePlayGroup != null) gamePlayGroup.SetActive(true);
+        if (gamePlayUI != null) gamePlayUI.SetActive(true);
 
         // 플레이어 리셋
         if (player != null)
@@ -107,10 +135,14 @@ public class GameManager : MonoBehaviour
             {
                 s.ResetSpawner();
             }
+
+            GameEvents.OnGameStart?.Invoke();
         }
     }
 
-    // 데이터 초기화 (재시작 및 메인 화면 이동 시 호출)
+    /// <summary>
+    /// 오브젝트 초기화
+    /// </summary>
     public void ResetData()
     {
         // 배치 ID(점수 배율) 초기화
@@ -153,7 +185,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // [재시작] : 데이터 리셋 + 바로 게임 시작
+    /// <summary>
+    /// [재시작] : 데이터 리셋 + 바로 게임 시작
+    /// </summary>
     public void RetryGame()
     {
         if (!canRetry) return;
@@ -162,7 +196,9 @@ public class GameManager : MonoBehaviour
         EnterPlayState();
     }
 
-    // [메인으로] : 데이터 리셋 + 메인 화면 이동
+    /// <summary>
+    /// [메인으로] : 데이터 리셋 + 메인 화면 이동
+    /// </summary>
     public void GoToMain()
     {
         if (!canRetry) return;
@@ -171,17 +207,24 @@ public class GameManager : MonoBehaviour
         EnterMainState();
     }
 
-    // 게임 오버
+    /// <summary>
+    /// 게임 오버
+    /// </summary>
     public void TriggerGameOver()
     {
         Time.timeScale = 0; // 정지
 
-        // 즉시 재시작 방지 Lock
+        // 즉시 재시작 방지
         canRetry = false;
         StartCoroutine(EnableRetryRoutine());
 
         // 점수 가져오기
-        int current = ScoreManager.Instance.GetCurrentScore();
+        int current = 0;
+        if (ScoreManager.Instance != null)
+        {
+            current = ScoreManager.Instance.GetCurrentScore();
+        }
+
         int best = PlayerPrefs.GetInt("BestScore", 0);
         bool isNewRecord = false;
 
@@ -195,22 +238,29 @@ public class GameManager : MonoBehaviour
         }
 
         // [서버 연동] 서버로 점수 전송
-        if (RankingManager.Instance != null)
+        if (RankingManager.Instance != null && current > 0)
         {
             StartCoroutine(RankingManager.Instance.PostScore(current));
         }
 
+        // 인게임 UI 숨기기
         if (gamePlayUI != null)
         {
             gamePlayUI.SetActive(false);
         }
+
+        // 결과창 표시 및 데이터 전달
         if (gameOverPanel != null)
         {
-            gameOverPanel.Setup(current, best, isNewRecord);    // 결과창 표시
+            gameOverPanel.gameObject.SetActive(true);
+            gameOverPanel.Setup(current, best, isNewRecord);
         }
     }
 
-    // 실제 시간(Realtime)으로 1초 대기 후 버튼 활성화
+    /// <summary>
+    /// 실제 시간(Realtime)으로 1초 대기 후 버튼 활성화
+    /// </summary>
+    /// <returns></returns>
     IEnumerator EnableRetryRoutine()
     {
         yield return new WaitForSecondsRealtime(1.0f);

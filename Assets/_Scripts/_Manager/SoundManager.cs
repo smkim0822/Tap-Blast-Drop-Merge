@@ -5,16 +5,18 @@ public class SoundManager : MonoBehaviour
 {
     public static SoundManager Instance;
 
-    [Header("Audio Sources")]
-    [SerializeField] private AudioSource bgmSource;
+    [Header("Audio Sources (오디오 소스 연결)")]
+    [Tooltip("효과음을 재생할 오디오 소스 컴포넌트")]
     [SerializeField] private AudioSource sfxSource;
 
-    [Header("Settings")]
+    [Header("Settings (사운드 재생 설정)")]
+    [Tooltip("동일한 효과음이 너무 짧은 간격으로 겹쳐 재생되는 것을 방지하는 쿨타임 (초)")]
     [SerializeField] private float minSoundInterval = 0.05f; // 같은 소리 반복 재생 방지 시간 (0.05초)
+    [Tooltip("효과음 재생 시 피치를 미세하게 무작위 변경하여 기계적인 느낌을 줄일지 여부")]
     [SerializeField] private bool usePitchVariation = true;  // 피치 랜덤 사용 여부
 
+    // 사운드 ON/OFF 상태 저장 변수
     private bool isSoundOn = true;
-    private bool isMusicOn = true;
 
     // 마지막으로 소리가 재생된 시간을 기록 (Key: 오디오클립, Value: 시간)
     private Dictionary<AudioClip, float> lastPlayedTimes = new Dictionary<AudioClip, float>();
@@ -34,33 +36,35 @@ public class SoundManager : MonoBehaviour
         InitializeSettings();
     }
 
-    // --- 사운드 재생 이벤트 구독 설정 ---
+    /// <summary>
+    /// 오브젝트 활성화 시 효과음 재생 이벤트 구독
+    /// </summary>
     private void OnEnable()
     {
         GameEvents.OnPlaySFX += PlaySFX;
     }
 
+    /// <summary>
+    /// 오브젝트 비활성화 시 효과음 재생 이벤트 해제
+    /// </summary>
     private void OnDisable()
     {
         GameEvents.OnPlaySFX -= PlaySFX;
     }
-    // ------
 
+    /// <summary>
+    /// 기기에 저장된 효과음 ON/OFF 설정을 불러와 적용
+    /// </summary>
     private void InitializeSettings()
     {
         isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
-        isMusicOn = PlayerPrefs.GetInt("MusicOn", 1) == 1;
-
-        if (bgmSource != null)
-        {
-            bgmSource.mute = !isMusicOn;
-            if (!bgmSource.isPlaying && isMusicOn)
-            {
-                bgmSource.Play();
-            }
-        }
     }
 
+    /// <summary>
+    /// 효과음 재생
+    /// </summary>
+    /// <param name="clip"></param>
+    /// <param name="volume"></param>
     public void PlaySFX(AudioClip clip, float volume = 1.0f)
     {
         if (!isSoundOn || clip == null || sfxSource == null) return;
@@ -92,17 +96,16 @@ public class SoundManager : MonoBehaviour
         sfxSource.PlayOneShot(clip, volume);
     }
 
+    /// <summary>
+    /// 외부에서 효과음 음소거 여부를 설정할 때 호출
+    /// </summary>
+    /// <param name="isMute"></param>
     public void SetSoundMute(bool isMute)
     {
         isSoundOn = !isMute;
-    }
 
-    public void SetMusicMute(bool isMute)
-    {
-        isMusicOn = !isMute;
-        if (bgmSource != null)
-        {
-            bgmSource.mute = isMute;
-        }
+        // 설정을 기기에 저장
+        PlayerPrefs.SetInt("SoundOn", isSoundOn ? 1 : 0);
+        PlayerPrefs.Save();
     }
 }

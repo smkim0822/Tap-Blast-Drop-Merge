@@ -3,22 +3,20 @@ using System.Collections;
 
 public class GrainLogic : MonoBehaviour
 {
-    // 출신 번호 (BombLogic에서 할당)
+    [Header("Basic Info (기본 정보)")]
+    [Tooltip("출신 폭탄 번호 (BombLogic에서 할당됨)")]
     public int batchId = -1;
-    // 오디오 파일 변수
-    public AudioClip popSound;
-    // 파티클 프리팹 변수
-    public GameObject explosionEffectPrefab;
 
-    [Header("Score Settings")]
+    [Header("Effects (이펙트)")]
+    public AudioClip popSound;
+    public GameObject explosionEffectPrefab;
+    public GameObject floatingTextPrefab;
+
+    [Header("Score Settings (점수 설정)")]
     [Tooltip("점수 계산 배율 (크기 * 배율 = 기본 점수)")]
     public float scoreMultiplier = 1f;
-
-    [Tooltip("배치 ID당 점수 증가율 (0.1 = 10%씩 증가, 0.01 = 1%씩 증가)")]
+    [Tooltip("배치 ID당 점수 증가율 (0.05 = 5%씩 증가)")]
     public float scoreGrowthRate = 0.05f;
-
-    [Header("UI Effects")]
-    public GameObject floatingTextPrefab;
 
     private SpriteRenderer myRenderer;
     private Collider2D myCollider;
@@ -26,31 +24,37 @@ public class GrainLogic : MonoBehaviour
 
     private bool isDestroying = false;
     private Color effectColor = Color.white;
-    private Vector3 originalScale;
 
     void Awake()
     {
         myRenderer = GetComponent<SpriteRenderer>();
         myCollider = GetComponent<Collider2D>();
         myRb = GetComponent<Rigidbody2D>();
-        originalScale = transform.localScale;
     }
 
-    // 풀링 재활용 시 상태 초기화
+    // 풀링 시스템: 오브젝트가 활성화될 때마다 모든 상태 초기화
     void OnEnable()
     {
         isDestroying = false;
+
         if (myCollider != null)
         {
             myCollider.enabled = true;
         }
+
         if (myRb != null)
         {
             myRb.simulated = true;
             myRb.linearVelocity = Vector2.zero;
+            myRb.angularVelocity = 0f;
         }
     }
 
+    /// <summary>
+    /// 폭발 시 공 기본 정보 세팅
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="color"></param>
     public void SetupGrain(int id, Color color)
     {
         batchId = id;
@@ -62,31 +66,35 @@ public class GrainLogic : MonoBehaviour
         // 이미 파괴 중이면 로직 무시
         if (isDestroying) return;
 
-        // 다른 알갱이와 닿았을 때
-        GrainLogic otherGrain = collision.gameObject.GetComponent<GrainLogic>();
+        // 태그로 1차 필터링
+        if (!collision.gameObject.CompareTag("Stack")) return;
 
-        if (otherGrain != null)
+        // 상대방 공 로직 가져오기
+        if (collision.gameObject.TryGetComponent(out GrainLogic otherGrain))
         {
             // 상대방도 이미 파괴 중이면 무시 (중복 점수 방지)
             if (otherGrain.isDestroying) return;
 
             // 이미지 비교
-            if (IsSpriteMatch(myRenderer, otherGrain.GetComponent<SpriteRenderer>()))
+            if (IsSpriteMatch(myRenderer, otherGrain.myRenderer))
             {
                 // 출신 비교
                 if (this.batchId != otherGrain.batchId)
                 {
                     // 둘 다 사라짐
-                    DestroyGrain();
+                    this.DestroyGrain();
                     otherGrain.DestroyGrain();
                 }
             }
         }
     }
 
+    /// <summary>
+    /// 공 파괴, 점수 계산, 이펙트 생성, 애니메이션 실행 담당
+    /// </summary>
     public void DestroyGrain(){
         if (isDestroying) return;
-        isDestroying = true;
+        isDestroying = true;    // 다중 충돌로 인한 중복 파괴 방지
 
         // 기본 점수 계산 (크기 * 기본 배율)
         float baseScore = transform.localScale.x * scoreMultiplier;
@@ -100,6 +108,7 @@ public class GrainLogic : MonoBehaviour
 
         // 이벤트 발송
         GameEvents.OnScoreAdded?.Invoke(finalScore);
+
         if (popSound != null)
         {
             GameEvents.OnPlaySFX?.Invoke(popSound, 1.0f);
@@ -109,8 +118,8 @@ public class GrainLogic : MonoBehaviour
         if (explosionEffectPrefab != null)
         {
             GameObject psObj = PoolManager.Instance.Spawn(explosionEffectPrefab, transform.position, Quaternion.identity);
-            ParticleSystem ps = psObj.GetComponent<ParticleSystem>();
-            if (ps != null)
+
+            if (psObj.TryGetComponent(out ParticleSystem ps))
             {
                 var main = ps.main;
                 main.startColor = effectColor;
@@ -123,8 +132,8 @@ public class GrainLogic : MonoBehaviour
         if (floatingTextPrefab != null)
         {
             GameObject go = PoolManager.Instance.Spawn(floatingTextPrefab, transform.position, Quaternion.identity);
-            FloatingText floatingText = go.GetComponent<FloatingText>();
-            if (floatingText != null)
+
+            if (go.TryGetComponent(out FloatingText floatingText))
             {
                 floatingText.SetText("+" + finalScore, effectColor);
             }
@@ -135,10 +144,12 @@ public class GrainLogic : MonoBehaviour
         {
             myCollider.enabled = false;
         }
+
         if (myRb != null)
         {
             myRb.simulated = false;
             myRb.linearVelocity = Vector2.zero;
+            myRb.angularVelocity = 0f;
         }
 
         StartCoroutine(CoPopAnimation());
@@ -148,26 +159,28 @@ public class GrainLogic : MonoBehaviour
     IEnumerator CoPopAnimation()
     {
         float duration = 0.15f;     // 애니메이션 시간
+        float halfDuration = duration * 0.5f;
         float timer = 0f;
 
-        Vector3 baseScale = transform.localScale;
-        Vector3 targetScale = originalScale * 1.5f;     // 커짐 (텐션)
+        Vector3 startScale = transform.localScale;
+        Vector3 targetScale = startScale * 1.5f;     // 커짐 (텐션)
 
         // 커지기 (Tension)
-        while (timer < duration * 0.5f)
+        while (timer < halfDuration)
         {
             timer += Time.deltaTime;
-            float progress = timer / (duration * 0.5f);
-            transform.localScale = Vector3.Lerp(baseScale, targetScale, progress);
+            float progress = timer / halfDuration;
+            transform.localScale = Vector3.Lerp(startScale, targetScale, progress);
             yield return null;
         }
 
-        // 작아지기 (Pop)
         timer = 0f;
-        while (timer < duration * 0.5f)
+
+        // 작아지기 (Pop)
+        while (timer < halfDuration)
         {
             timer += Time.deltaTime;
-            float progress = timer / (duration * 0.5f);
+            float progress = timer / halfDuration;
             transform.localScale = Vector3.Lerp(targetScale, Vector3.zero, progress);
             yield return null;
         }
@@ -176,7 +189,8 @@ public class GrainLogic : MonoBehaviour
         PoolManager.Instance.Despawn(gameObject);
     }
 
-    bool IsSpriteMatch(SpriteRenderer r1, SpriteRenderer r2)
+    // 스프라이트 이미지 동일 여부 확인 헬퍼 함수
+    private bool IsSpriteMatch(SpriteRenderer r1, SpriteRenderer r2)
     {
         if (r1 == null || r2 == null) return false;
         return r1.sprite == r2.sprite;

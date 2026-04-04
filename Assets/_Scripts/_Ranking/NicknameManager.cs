@@ -5,6 +5,7 @@ public class NicknameManager : MonoBehaviour
 {
     public static NicknameManager Instance;
 
+    // PlayerPrefs에 닉네임을 저장할 때 사용할 고유 키값
     private const string PREFS_KEY = "PlayerName";
 
     private void Awake()
@@ -20,7 +21,10 @@ public class NicknameManager : MonoBehaviour
         }
     }
 
-    // 닉네임 초기화 및 자동 생성
+    /// <summary>
+    /// 게임 최초 실행 시 닉네임이 없다면 임의의 Guest 닉네임 생성.
+    /// Awake 단계에서 자동 호출.
+    /// </summary>
     private void InitializeNickname()
     {
         // 1. 저장된 닉네임이 있는지 확인 (기본값은 빈 문자열)
@@ -37,7 +41,11 @@ public class NicknameManager : MonoBehaviour
         }
     }
 
-    // [기능] 닉네임 변경 및 저장
+    /// <summary>
+    /// 새로운 닉네임을 검증하고 로컬 기기에 저장.
+    /// </summary>
+    /// <param name="newName">변경을 시도할 새 닉네임</param>
+    /// <returns>저장 성공 여부 (true: 성공, false: 유효성 검사 실패)</returns>
     public bool SetNickname(string newName)
     {
         // 빈 값 또는 공백 체크
@@ -61,7 +69,10 @@ public class NicknameManager : MonoBehaviour
         return true;
     }
 
-    // [기능] 현재 닉네임 가져오기
+    /// <summary>
+    /// 현재 기기에 저장된 플레이어의 닉네임을 불러옴.
+    /// </summary>
+    /// <returns>저장된 닉네임 (가져오기 실패 시 "Guest_Error" 반환)</returns>
     public string GetNickname()
     {
         return PlayerPrefs.GetString(PREFS_KEY, "Guest_Error");

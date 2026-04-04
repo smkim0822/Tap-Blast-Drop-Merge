@@ -14,85 +14,83 @@ public class Spawner : MonoBehaviour
         public Color color;
     }
 
-    [Header("Settings")]
+    [Header("Settings (기본 설정)")]
     [Tooltip("생성할 폭탄 프리팹")]
     public GameObject bombPrefab;
 
     [Tooltip("화면 좌우 이동 제한 범위 (X축)")]
-    public float xLimit = 2.0f; // [수정됨] 1.6 -> 2.0로 확장 (벽 위치 고려)
+    public float xLimit = 2.0f;
 
     [Tooltip("재장전 시간")]
     public float cooldownTime = 0.5f;
 
-    [Header("Elements")]
+    [Header("Elements (폭탄 데이터)")]
     public ElementData[] elements;
 
-    [Header("UI References")]
-    [Tooltip("다음 폭탄 색상 UI 이미지")]
+    [Header("UI References (UI 연결)")]
+    [Tooltip("대기열 폭탄 색상을 표시할 UI 이미지 배열")]
     public Image[] nextBombUIs;
     
-    [Header("Guide Line")]
-    [Tooltip("라인 렌더러 컴포넌트 연결")]
+    [Header("Guide Line (표시선 설정)")]
+    [Tooltip("라인 렌더러 컴포넌트")]
     public LineRenderer guideLine;
 
-    [Tooltip("표시선이 바닥에 닿을 바닥의 Y좌표")]
+    [Tooltip("표시선이 닿을 바닥의 Y좌표")]
     public float groundY = -4.5f;
 
     [Tooltip("점선 간격 조절")]
-    public float lineTextureScale = 1;
+    public float lineTextureScale = 1f;
 
-    [Header("Animation Settings (Falling Bomb)")]
+    [Header("Animation Settings (애니메이션 곡선 및 시간)")]
     public AnimationCurve spawnCurve;
     public float spawnDuration = 0.3f;
 
-    [Header("Animation Settings (Spawner Reload)")]
     public AnimationCurve spawnerLoadCurve;
     public float spawnerLoadDuration = 0.3f;
 
-    [Header("Animation Settings (UI)")]
     public AnimationCurve uiPunchCurve;
     public float uiAnimDuration = 0.2f;
 
+    // 내부 상태 변수
     private Camera mainCam;
     private bool isDragging = false;
     private bool isReloading = false;
 
+    // 컴포넌트 및 캐싱 변수
     private SpriteRenderer spawnerRenderer;
+    private Vector3 originalScale;
+
+    // 데이터 큐
     private ElementData currentElement;
     private List<ElementData> nextElements = new List<ElementData>();
-    private Vector3 originalScale;
 
     void Awake()
     {
+        mainCam = Camera.main;
+        spawnerRenderer = GetComponent<SpriteRenderer>();
+
+        if (guideLine == null)
+        {
+            guideLine = GetComponent<LineRenderer>();
+        }
+
         originalScale = transform.localScale;
         if (originalScale == Vector3.zero)
         {
             originalScale = Vector3.one;
         }
-
-        mainCam = Camera.main;
-        spawnerRenderer = GetComponent<SpriteRenderer>();
-        if (guideLine == null)
-        {
-            guideLine = GetComponent<LineRenderer>();
-        }
     }
 
     void Start()
     {
-        guideLine.positionCount = 2;
-        guideLine.enabled = false;
-        guideLine.textureMode = LineTextureMode.Tile;
-        guideLine.sortingOrder = 5;
-
-        // 게임 시작 시 초기화
+        InitializeGuideLine();
         InitializeQueue();
-        PrepareNextBomb();
+        PrepareNextBomb(false);
     }
 
     void Update()
     {
-        if (Time.timeScale == 0 || isReloading || IsPointerOverUI())
+        if (Time.timeScale == 0f || isReloading || IsPointerOverUI())
         {
             return;
         }
@@ -104,28 +102,50 @@ public class Spawner : MonoBehaviour
         {
             DrawGuideLine();
         }
-        else 
+        else if (guideLine.enabled)
         {
             guideLine.enabled = false;
         }
     }
 
-    // 입력이 UI 위인지 판별하는 함수
+    /// <summary>
+    /// 표시선 렌더러의 초기 속성 설정
+    /// </summary>
+    /// <returns></returns>
+    private void InitializeGuideLine()
+    {
+        guideLine.positionCount = 2;
+        guideLine.enabled = false;
+        guideLine.textureMode = LineTextureMode.Tile;
+        guideLine.sortingOrder = 5;
+    }
+
+    /// <summary>
+    /// 현재 터치 이벤트가 UI 요소 위에서 발생했는지 판별
+    /// </summary>
+    /// <returns></returns>
     private bool IsPointerOverUI()
     {
+        if (EventSystem.current == null) return false;
+
+        // 클릭
         if (EventSystem.current.IsPointerOverGameObject())
         {
             return true;
         }
 
-        if (Input.touchCount > 0 && EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+        // 터치
+        if (Input.touchCount > 0)
         {
-            return true;
+            return EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId);
         }
 
         return false;
     }
 
+    /// <summary>
+    /// 사용자 입력 처리
+    /// </summary>
     void HandleInput()
     {
         // 터치 시작
@@ -150,7 +170,10 @@ public class Spawner : MonoBehaviour
         }
     }
 
-    void MoveSpawner()
+    /// <summary>
+    /// 스포너의 위치를 마우스 좌표에 맞춰 X축으로만 이동
+    /// </summary>
+    private void MoveSpawner()
     {
         // 마우스 화면 좌표 -> 월드 좌표로 변환
         Vector3 mousePos = mainCam.ScreenToWorldPoint(Input.mousePosition);
@@ -159,20 +182,26 @@ public class Spawner : MonoBehaviour
         float clampedX = Mathf.Clamp(mousePos.x, -xLimit, xLimit);
 
         // 이동
-        transform.position = new Vector2(clampedX, transform.position.y);
+        transform.position = new Vector3(clampedX, transform.position.y, transform.position.z);
     }
 
+    /// <summary>
+    /// 목표 지점까지의 표시선을 그리고 텍스처 배율을 조절
+    /// </summary>
     void DrawGuideLine()
     {
+        Vector3 currentPos = transform.position;
+        Vector3 endPos = new Vector3(currentPos.x, groundY, 0f);
+
         // 시작점: 스포너의 현재 위치
-        guideLine.SetPosition(0, transform.position);
+        guideLine.SetPosition(0, currentPos);
 
         // 끝점: X는 스포너와 같고, Y는 바닥까지
-        Vector3 endPos = new Vector3(transform.position.x, groundY, 0);
         guideLine.SetPosition(1, endPos);
 
-        float distance = Vector3.Distance(transform.position, endPos);
-        guideLine.material.mainTextureScale = new Vector2(distance * lineTextureScale, 1);
+        float distance = Vector3.Distance(currentPos, endPos);
+        
+        guideLine.material.mainTextureScale = new Vector2(distance * lineTextureScale, 1f);
 
         Color guideColor = currentElement.color;
         guideLine.startColor = guideColor;
@@ -180,7 +209,11 @@ public class Spawner : MonoBehaviour
         guideLine.endColor = guideColor;
     }
 
-    IEnumerator DropBombRoutine()
+    /// <summary>
+    /// 폭탄을 투하하고 재장전 대기 시간을 갖는 코루틴
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator DropBombRoutine()
     {
         // 폭탄 생성
         if (bombPrefab != null)
@@ -190,10 +223,9 @@ public class Spawner : MonoBehaviour
             // 초기 크기 지정 후 코루틴 애니메이션
             Vector3 realScale = newBomb.transform.localScale;
             newBomb.transform.localScale = Vector3.zero;
-            StartCoroutine(AnimateSpawn(newBomb.transform, realScale));
+            StartCoroutine(AnimateScale(newBomb.transform, spawnCurve, spawnDuration, realScale));
 
-            BombLogic bombLogic = newBomb.GetComponent<BombLogic>();
-            if (bombLogic != null)
+            if (newBomb.TryGetComponent(out BombLogic bombLogic))
             {
                 bombLogic.Initialize(currentElement.sprite, currentElement.color);
             }
@@ -201,20 +233,28 @@ public class Spawner : MonoBehaviour
 
         // 재장전 시작
         isReloading = true;
-        spawnerRenderer.enabled = false;
+        if (spawnerRenderer != null)
+        {
+            spawnerRenderer.enabled = false;  
+        } 
 
         // 장전 대기시간
         yield return new WaitForSeconds(cooldownTime);
 
         // 재장전 완료
-        PrepareNextBomb();
+        PrepareNextBomb(true);
 
-        spawnerRenderer.enabled = true;
+        if (spawnerRenderer != null)
+        {
+            spawnerRenderer.enabled = true;
+        }
         isReloading = false;
     }
 
-    // 대기열 3개 채우기
-    void InitializeQueue()
+    /// <summary>
+    /// 대기열을 지정된 UI 개수만큼 무작위 원소로 초기화
+    /// </summary>
+    private void InitializeQueue()
     {
         nextElements.Clear();
         for (int i = 0; i < nextBombUIs.Length; i++)
@@ -223,8 +263,10 @@ public class Spawner : MonoBehaviour
         }
     }
 
-    // 다음 폭탄을 현재 폭탄으로 가져오고, 새로운 다음 폭탄을 뽑는 함수
-    void PrepareNextBomb()
+    /// <summary>
+    /// 대기열의 마지막 원소를 현재 원소로 가져오고, 새로운 원소를 대기열 앞에 추가
+    /// </summary>
+    void PrepareNextBomb(bool playAnim = true)
     {
         if (nextElements.Count == 0)
         {
@@ -235,24 +277,25 @@ public class Spawner : MonoBehaviour
         currentElement = nextElements[lastIndex];
 
         nextElements.RemoveAt(lastIndex);
-
         nextElements.Insert(0, PickRandomElement());
 
         // 시각적 업데이트
-        UpdateVisuals();
+        UpdateVisuals(playAnim);
     }
 
-    ElementData PickRandomElement()
+    private ElementData PickRandomElement()
     {
-        if (elements.Length > 0)
+        if (elements != null && elements.Length > 0)
         {
-            int randomIndex = Random.Range(0, elements.Length);
-            return elements[randomIndex];
+            return elements[Random.Range(0, elements.Length)];
         }
         return new ElementData();
     }
 
-    void UpdateVisuals()
+    /// <summary>
+    /// 스포너와 UI의 스프라이트 및 애니메이션 갱신
+    /// </summary>
+    void UpdateVisuals(bool playAnim)
     {
         // 스포너 이미지 변경
         if (spawnerRenderer != null)
@@ -260,7 +303,14 @@ public class Spawner : MonoBehaviour
             spawnerRenderer.sprite = currentElement.sprite;
             spawnerRenderer.color = Color.white;
 
-            StartCoroutine(AnimateSpawnerReload());
+            if (playAnim)
+            {
+                StartCoroutine(AnimateScale(transform, spawnerLoadCurve, spawnerLoadDuration, originalScale));
+            }
+            else
+            {
+                transform.localScale = originalScale;
+            }            
         }
 
         // UI 업데이트
@@ -268,131 +318,81 @@ public class Spawner : MonoBehaviour
         {
             if (i < nextElements.Count)
             {
-                nextBombUIs[i].sprite = nextElements[i].sprite;
-
-                Color uiColor = Color.white;
+                Image targetUI = nextBombUIs[i];
+                targetUI.sprite = nextElements[i].sprite;
 
                 bool isNextBomb = (i == nextElements.Count - 1);
+
+                Color uiColor = Color.white;
+                uiColor.a = isNextBomb ? 1.0f : 0.5f;
+                targetUI.color = uiColor;
+
                 float targetScale = 0.8f;
 
-                if (isNextBomb)
+                if (playAnim)
                 {
-                    uiColor.a = 1.0f;
-                    // targetScale = 1.2f;
+                    StartCoroutine(AnimateScale(targetUI.rectTransform, uiPunchCurve, uiAnimDuration, Vector3.one * targetScale));
                 }
                 else
                 {
-                    uiColor.a = 0.5f;
+                    targetUI.rectTransform.localScale = Vector3.one * targetScale;
                 }
-                
-                nextBombUIs[i].color = uiColor;
-
-                StartCoroutine(AnimateUI(nextBombUIs[i].rectTransform, targetScale));
             }
         }
     }
 
-    // 초기화
+    /// <summary>
+    /// 스포너 상태 강제 초기화
+    /// </summary>
     public void ResetSpawner()
     {
         StopAllCoroutines();
 
         isDragging = false;
         isReloading = false;
+
+        transform.position = new Vector3(0f, transform.position.y, 0f);
+        transform.localScale = originalScale;
+
         if (spawnerRenderer == null)
         {
             spawnerRenderer = GetComponent<SpriteRenderer>();
         }
-        spawnerRenderer.enabled = true;
-        if (guideLine != null)
-        {
-            guideLine.enabled = false;
-        }
-
-        transform.position = new Vector3(0, transform.position.y, 0);
-        transform.localScale = originalScale;
-
-        nextElements.Clear();
-        InitializeQueue();
-
-        int lastIndex = nextElements.Count - 1;
-        currentElement = nextElements[lastIndex];
-        nextElements.RemoveAt(lastIndex);
-        nextElements.Insert(0, PickRandomElement());
-
-        ForceUpdateVisuals();
-    }
-
-    private void ForceUpdateVisuals()
-    {
-        if (spawnerRenderer == null) spawnerRenderer = GetComponent<SpriteRenderer>();
-        
         if (spawnerRenderer != null)
         {
-            spawnerRenderer.sprite = currentElement.sprite;
-            spawnerRenderer.color = Color.white;
             spawnerRenderer.enabled = true;
         }
 
-        transform.localScale = originalScale;
+        InitializeQueue();
+        PrepareNextBomb(false);
+    }
 
-        for (int i = 0; i < nextBombUIs.Length; i++)
+    /// <summary>
+    /// Transform의 스케일을 지정된 Curve와 시간에 맞춰 애니메이션을 처리하는 통합 코루틴
+    /// </summary>
+    /// <param name="target"></param>
+    /// <param name="targetScale"></param>
+    /// <returns></returns>
+    private IEnumerator AnimateScale(Transform targetTransform, AnimationCurve curve, float duration, Vector3 finalScale)
+    {
+        if (targetTransform == null) yield break;
+
+        float timer = 0f;
+        while (timer < duration)
         {
-            if (i < nextElements.Count)
+            timer += Time.deltaTime;
+            float progress = timer / duration;
+
+            if (targetTransform != null)
             {
-                nextBombUIs[i].sprite = nextElements[i].sprite;
-                bool isNextBomb = (i == nextElements.Count - 1);
-                Color uiColor = Color.white;
-                uiColor.a = isNextBomb ? 1.0f : 0.5f;
-                nextBombUIs[i].color = uiColor;
-                // nextBombUIs[i].rectTransform.localScale = Vector3.one * (isNextBomb ? 1.2f : 0.8f);
-                nextBombUIs[i].rectTransform.localScale = Vector3.one * 0.8f;
+                targetTransform.localScale = finalScale * curve.Evaluate(progress);
             }
-        }
-    }
-
-    IEnumerator AnimateSpawn(Transform target, Vector3 targetScale)
-    {
-        float timer = 0f;
-        while (timer < spawnDuration)
-        {
-            timer += Time.deltaTime;
-            float progress = timer / spawnDuration;
-            float curveValue = spawnCurve.Evaluate(progress);
-            if (target != null) target.localScale = targetScale * curveValue;
             yield return null;
         }
-        if (target != null) target.localScale = targetScale;
-    }
 
-    IEnumerator AnimateSpawnerReload()
-    {
-        float timer = 0f;
-        Vector3 targetScale = originalScale;
-        transform.localScale = Vector3.zero;
-        while (timer < spawnerLoadDuration)
+        if (targetTransform != null)
         {
-            timer += Time.deltaTime;
-            float progress = timer / spawnerLoadDuration;
-            float curveValue = spawnerLoadCurve.Evaluate(progress);
-            transform.localScale = targetScale * curveValue;
-            yield return null;
+            targetTransform.localScale = finalScale;
         }
-        transform.localScale = targetScale;
-    }
-
-    IEnumerator AnimateUI(RectTransform target, float baseScale)
-    {
-        float timer = 0f;
-        Vector3 baseScaleVec = Vector3.one * baseScale;
-        while (timer < uiAnimDuration)
-        {
-            timer += Time.deltaTime;
-            float progress = timer / uiAnimDuration;
-            float curveValue = uiPunchCurve.Evaluate(progress);
-            if (target != null) target.localScale = baseScaleVec * curveValue;
-            yield return null;
-        }
-        if (target != null) target.localScale = baseScaleVec;
     }
 }
