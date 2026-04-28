@@ -2142,6 +2142,7 @@ GameObject:
   m_Component:
   - component: {fileID: 763654308}
   - component: {fileID: 763654309}
+  - component: {fileID: 763654310}
   m_Layer: 5
   m_Name: RankingPopup
   m_TagString: Untagged
@@ -2182,12 +2183,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cefb882b2cdd8647843d553673bd6de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  contentParent: {fileID: 593857754}
-  itemPrefab: {fileID: 3417531749099084344, guid: 031744fc7d3c9bb48b514fc27d844128, type: 3}
-  offlineMessageObject: {fileID: 1316905183}
-  myNameText: {fileID: 982123255}
-  myRankText: {fileID: 1927764875}
-  myScoreText: {fileID: 131737403}
+  contentParent: {fileID: 0}
+  itemPrefab: {fileID: 0}
+  offlineMessageObject: {fileID: 0}
+  myNameText: {fileID: 0}
+  myRankText: {fileID: 0}
+  myScoreText: {fileID: 0}
   editNameButton: {fileID: 1293915930}
   editPopupRoot: {fileID: 181194002}
   editPopupContent: {fileID: 2050037288}
@@ -2232,6 +2233,24 @@ MonoBehaviour:
   animDuration: 0.2
   keyboardOffsetY: 400
   moveAnimDuration: 0.2
+--- !u!114 &763654310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 763654307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6f658c972243c947b2d6155d8f9f5ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RankingBoardView
+  contentParent: {fileID: 593857754}
+  itemPrefab: {fileID: 3417531749099084344, guid: 031744fc7d3c9bb48b514fc27d844128, type: 3}
+  offlineMessageObject: {fileID: 1316905183}
+  myNameText: {fileID: 982123255}
+  myRankText: {fileID: 1927764875}
+  myScoreText: {fileID: 131737403}
 --- !u!1 &767029995
 GameObject:
   m_ObjectHideFlags: 0
@@ -3258,8 +3277,10 @@ MonoBehaviour:
   currentScoreText: {fileID: 1887124760}
   bestScoreText: {fileID: 1975094607}
   retryButton: {fileID: 816349314}
+  rankingButton: {fileID: 0}
   retryButtonCanvasGroup: {fileID: 816349317}
-  delayDuration: 1
+  appearDelay: 0.5
+  animDuration: 0.3
   appearanceCurve:
     serializedVersion: 2
     m_Curve:
@@ -4077,6 +4098,7 @@ GameObject:
   - component: {fileID: 1202033887}
   - component: {fileID: 1202033888}
   - component: {fileID: 1202033889}
+  - component: {fileID: 1202033890}
   m_Layer: 0
   m_Name: Spawner
   m_TagString: Untagged
@@ -4128,11 +4150,8 @@ MonoBehaviour:
   - name: Yellow
     sprite: {fileID: 21300000, guid: 3f2c5034e0625394c98ebeb59f7330b7, type: 3}
     color: {r: 0.98823535, g: 0.8941177, b: 0.2392157, a: 1}
-  nextBombUIs:
-  - {fileID: 419252551}
-  - {fileID: 914144075}
-  - {fileID: 1325179589}
-  guideLine: {fileID: 1202033889}
+  nextBombUIs: []
+  guideLine: {fileID: 0}
   groundY: -4.5
   lineTextureScale: 1
   spawnCurve:
@@ -4424,6 +4443,145 @@ LineRenderer:
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
+--- !u!114 &1202033890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1202033884}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 233eda202579edf45a641d51cdd333e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpawnerVisuals
+  nextBombUIs:
+  - {fileID: 419252551}
+  - {fileID: 914144075}
+  - {fileID: 1325179589}
+  guideLine: {fileID: 0}
+  groundY: -4.5
+  lineTextureScale: 1
+  spawnCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 5.75
+      outSlope: 5.75
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.2
+      value: 1.15
+      inSlope: 2.5416667
+      outSlope: 2.5416667
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.5
+      value: 0.95
+      inSlope: -0.21666667
+      outSlope: -0.21666667
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.8
+      value: 1.02
+      inSlope: 0.06666669
+      outSlope: 0.06666669
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: -0.09999991
+      outSlope: -0.09999991
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spawnDuration: 0.2
+  spawnerLoadCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 1.5
+      outSlope: 1.5
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.8
+      value: 1.2
+      inSlope: 0.24999982
+      outSlope: 0.24999982
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: -1.0000004
+      outSlope: -1.0000004
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spawnerLoadDuration: 0.3
+  uiPunchCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 1.5
+      outSlope: 1.5
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.8
+      value: 1.2
+      inSlope: 0.24999982
+      outSlope: 0.24999982
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: -1.0000004
+      outSlope: -1.0000004
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  uiAnimDuration: 0.2
 --- !u!1 &1211795760
 GameObject:
   m_ObjectHideFlags: 0
@@ -4796,17 +4954,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   soundButton: {fileID: 2052621978}
-  musicButton: {fileID: 1468386061}
   retryButton: {fileID: 723052907}
   mainButton: {fileID: 1034803146}
   closeButton: {fileID: 1817339111}
   backgroundButton: {fileID: 1385514615}
   soundIconImage: {fileID: 2052621979}
-  musicIconImage: {fileID: 1468386062}
   soundOnSprite: {fileID: 5793242344132948885, guid: e60a4c6f607cf0d4d9962d6caeb189ab, type: 3}
   soundOffSprite: {fileID: -7735006650386036789, guid: 8ec9cab0c9ca1bf4ba77efb4feacdc07, type: 3}
-  musicOnSprite: {fileID: -5279218547217668833, guid: 8e6db4820e201254c8bc3cf8cd76e254, type: 3}
-  musicOffSprite: {fileID: 1365868813818821180, guid: 4c6951aaf12c8214ba2c9cc8061cef26, type: 3}
   popupWindow: {fileID: 286535474}
   openCurve:
     serializedVersion: 2
@@ -6093,19 +6247,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1468386062}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1275809212}
-        m_TargetAssemblyTypeName: SettingsPopup, Assembly-CSharp
-        m_MethodName: OnClickMusic
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1468386062
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7595,7 +7737,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 820773129}
         m_TargetAssemblyTypeName: MainPanel, Assembly-CSharp
-        m_MethodName: OnClickRankingPopup
+        m_MethodName: OnRankingClicked
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7833,6 +7975,9 @@ GameObject:
   - component: {fileID: 1916613447}
   - component: {fileID: 1916613448}
   - component: {fileID: 1916613449}
+  - component: {fileID: 1916613451}
+  - component: {fileID: 1916613453}
+  - component: {fileID: 1916613452}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -7852,12 +7997,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3f9887e41fcfa040bb8495b94a4e062, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mainPanel: {fileID: 820773129}
-  gameOverPanel: {fileID: 968155876}
-  gamePlayGroup: {fileID: 850670292}
-  gamePlayUI: {fileID: 1024946514}
-  player: {fileID: 1202033884}
-  playerStartPos: {fileID: 1202033886}
+  mainPanel: {fileID: 0}
+  gameOverPanel: {fileID: 0}
+  gamePlayGroup: {fileID: 0}
+  gamePlayUI: {fileID: 0}
+  player: {fileID: 0}
+  playerStartPos: {fileID: 0}
 --- !u!4 &1916613445
 Transform:
   m_ObjectHideFlags: 0
@@ -7887,8 +8032,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11d8adec593fc4a429b72bd3449b8924, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentScoreText: {fileID: 1981419662}
-  bestScoreText: {fileID: 1125962956}
+  currentScoreText: {fileID: 0}
+  bestScoreText: {fileID: 0}
   punchScale: 1.25
   duration: 0.15
   bestPunchScale: 1.25
@@ -7904,7 +8049,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1bd302a8e8d52b4183e6d34af13cdb5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bgmSource: {fileID: 748355833}
   sfxSource: {fileID: 1359424252}
   minSoundInterval: 0.05
   usePitchVariation: 1
@@ -7932,7 +8076,53 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c72537415699b54ca7cbf8dfeae4c58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NicknameManager
-  nicknameInput: {fileID: 1769813480}
+--- !u!114 &1916613451
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916613443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c4b38650226b0b4a956b955e5388c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PoolManager
+--- !u!114 &1916613452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916613443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9a49bd8a69166f409290d79f30d77b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScoreHudView
+  currentScoreText: {fileID: 1981419662}
+  bestScoreText: {fileID: 1125962956}
+  punchScale: 1.25
+  duration: 0.15
+  bestPunchScale: 1.25
+--- !u!114 &1916613453
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916613443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41ec2cac75762a84e940440c241bf229, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameUIRoots
+  _mainPanel: {fileID: 820773129}
+  _gameOverPanel: {fileID: 968155876}
+  _gamePlayGroup: {fileID: 850670292}
+  _gamePlayUI: {fileID: 1024946514}
+  _player: {fileID: 1202033884}
+  _playerStartPos: {fileID: 1202033886}
 --- !u!1 &1918399977
 GameObject:
   m_ObjectHideFlags: 0
@@ -9087,19 +9277,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2052621979}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1275809212}
-        m_TargetAssemblyTypeName: SettingsPopup, Assembly-CSharp
-        m_MethodName: OnClickSound
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &2052621979
 MonoBehaviour:
   m_ObjectHideFlags: 0
