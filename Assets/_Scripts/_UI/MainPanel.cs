@@ -60,10 +60,7 @@ public class MainPanel : MonoBehaviour
     /// </summary>
     public void OnPlayClicked()
     {
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.EnterPlayState();
-        }
+        SessionEvents.OnRequestPlay?.Invoke();
     }
 
     /// <summary>

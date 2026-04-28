@@ -69,10 +69,7 @@ public class GameOverPanel : MonoBehaviour
     /// </summary>
     void OnRetryClicked()
     {
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.RetryGame();
-        }
+        SessionEvents.OnRequestRetry?.Invoke();
     }
 
     /// <summary>

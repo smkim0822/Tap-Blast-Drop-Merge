@@ -8,9 +8,9 @@ public class GrainLogic : MonoBehaviour
     public int batchId = -1;
 
     [Header("Effects (이펙트)")]
-    public AudioClip popSound;
-    public GameObject explosionEffectPrefab;
-    public GameObject floatingTextPrefab;
+    [SerializeField, HideInInspector] public AudioClip popSound;
+    [SerializeField, HideInInspector] public GameObject explosionEffectPrefab;
+    [SerializeField, HideInInspector] public GameObject floatingTextPrefab;
 
     [Header("Score Settings (점수 설정)")]
     [Tooltip("점수 계산 배율 (크기 * 배율 = 기본 점수)")]
@@ -24,12 +24,20 @@ public class GrainLogic : MonoBehaviour
 
     private bool isDestroying = false;
     private Color effectColor = Color.white;
+    private GrainBurstEffects burstEffects;
 
     void Awake()
     {
         myRenderer = GetComponent<SpriteRenderer>();
         myCollider = GetComponent<Collider2D>();
         myRb = GetComponent<Rigidbody2D>();
+        burstEffects = GetComponent<GrainBurstEffects>();
+        if (burstEffects == null)
+        {
+            burstEffects = gameObject.AddComponent<GrainBurstEffects>();
+        }
+
+        burstEffects.ConfigureIfMissing(popSound, explosionEffectPrefab, floatingTextPrefab);
     }
 
     // 풀링 시스템: 오브젝트가 활성화될 때마다 모든 상태 초기화
@@ -96,47 +104,13 @@ public class GrainLogic : MonoBehaviour
         if (isDestroying) return;
         isDestroying = true;    // 다중 충돌로 인한 중복 파괴 방지
 
-        // 기본 점수 계산 (크기 * 기본 배율)
-        float baseScore = transform.localScale.x * scoreMultiplier;
-
-        // 성장 배율 계산 (1 + 진행도 * 성장률)
-        float currentEra = BombLogic.globalBatchIdCounter;
-        float growthFactor = 1.0f + (currentEra * scoreGrowthRate);
-
-        // 최종 점수 계산
-        int finalScore = Mathf.Max(1, Mathf.RoundToInt(baseScore * growthFactor));
+        int finalScore = GrainScorePolicy.Calculate(batchId, transform.localScale.x, scoreMultiplier, scoreGrowthRate);
 
         // 이벤트 발송
-        GameEvents.OnScoreAdded?.Invoke(finalScore);
-
-        if (popSound != null)
+        ScoreEvents.OnScoreAdded?.Invoke(finalScore);
+        if (burstEffects != null)
         {
-            GameEvents.OnPlaySFX?.Invoke(popSound, 1.0f);
-        }
-
-        // 파티클 풀링 생성
-        if (explosionEffectPrefab != null)
-        {
-            GameObject psObj = PoolManager.Instance.Spawn(explosionEffectPrefab, transform.position, Quaternion.identity);
-
-            if (psObj.TryGetComponent(out ParticleSystem ps))
-            {
-                var main = ps.main;
-                main.startColor = effectColor;
-                ps.Play();
-                PoolManager.Instance.Despawn(psObj, main.startLifetime.constantMax + 0.1f);
-            }
-        }
-
-        // 플로팅 텍스트 풀링 생성
-        if (floatingTextPrefab != null)
-        {
-            GameObject go = PoolManager.Instance.Spawn(floatingTextPrefab, transform.position, Quaternion.identity);
-
-            if (go.TryGetComponent(out FloatingText floatingText))
-            {
-                floatingText.SetText("+" + finalScore, effectColor);
-            }
+            burstEffects.Play(transform.position, effectColor, finalScore);
         }
 
         // 물리 연산 즉시 중단
@@ -186,7 +160,7 @@ public class GrainLogic : MonoBehaviour
         }
 
         // 풀에 반환
-        PoolManager.Instance.Despawn(gameObject);
+        PoolService.Despawn(gameObject);
     }
 
     // 스프라이트 이미지 동일 여부 확인 헬퍼 함수

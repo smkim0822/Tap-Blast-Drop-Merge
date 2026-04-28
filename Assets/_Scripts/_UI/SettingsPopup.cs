@@ -72,7 +72,7 @@ public class SettingsPopup : MonoBehaviour
         }
     }
 
-    private void OnDestory()
+    private void OnDestroy()
     {
         if (soundButton != null) soundButton.onClick.RemoveListener(OnClickSound);
         if (retryButton != null) retryButton.onClick.RemoveListener(OnClickRetry);
@@ -152,13 +152,7 @@ public class SettingsPopup : MonoBehaviour
     public void OnClickSound()
     {
         isSoundOn = !isSoundOn;
-
-        if (SoundManager.Instance != null)
-        {
-            SoundManager.Instance.SetSoundMute(!isSoundOn);
-        }
-
-        SaveSettings();
+        AudioEvents.OnRequestSetSoundMute?.Invoke(!isSoundOn);
         UpdateUI();
     }
 
@@ -178,20 +172,14 @@ public class SettingsPopup : MonoBehaviour
     public void OnClickRetry()
     {
         Time.timeScale = 1f;
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.RetryGame();
-        }
+        SessionEvents.OnRequestRetry?.Invoke();
         gameObject.SetActive(false);
     }
 
     public void OnClickMain()
     {
         Time.timeScale = 1f;
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.GoToMain();
-        }
+        SessionEvents.OnRequestGoToMain?.Invoke();
         gameObject.SetActive(false);
     }
 
@@ -213,13 +201,12 @@ public class SettingsPopup : MonoBehaviour
 
     private void SaveSettings()
     {
-        PlayerPrefs.SetInt("SoundOn", isSoundOn ? 1 : 0);
-        PlayerPrefs.Save();
+        // 저장은 SoundManager가 담당합니다.
     }
 
     private void LoadSettings()
     {
-        isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
+        isSoundOn = SoundSettingsStore.LoadIsSoundOn();
     }
 
     // 메인화면/인게임에 따라 버튼 보여주기

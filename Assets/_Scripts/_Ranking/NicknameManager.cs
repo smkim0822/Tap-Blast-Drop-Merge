@@ -5,9 +5,6 @@ public class NicknameManager : MonoBehaviour
 {
     public static NicknameManager Instance;
 
-    // PlayerPrefs에 닉네임을 저장할 때 사용할 고유 키값
-    private const string PREFS_KEY = "PlayerName";
-
     private void Awake()
     {
         if (Instance == null)
@@ -28,7 +25,7 @@ public class NicknameManager : MonoBehaviour
     private void InitializeNickname()
     {
         // 1. 저장된 닉네임이 있는지 확인 (기본값은 빈 문자열)
-        string currentName = PlayerPrefs.GetString(PREFS_KEY, "");
+        string currentName = NicknameStore.Load("");
 
         // 2. 닉네임이 비어있다면 (최초 실행) -> Guest_XXXX 생성
         if (string.IsNullOrEmpty(currentName))
@@ -48,23 +45,14 @@ public class NicknameManager : MonoBehaviour
     /// <returns>저장 성공 여부 (true: 성공, false: 유효성 검사 실패)</returns>
     public bool SetNickname(string newName)
     {
-        // 빈 값 또는 공백 체크
-        if (string.IsNullOrWhiteSpace(newName))
+        if (!NicknameValidator.IsValid(newName))
         {
-            Debug.LogWarning("⚠️ 닉네임은 비어있을 수 없습니다.");
-            return false;
-        }
-
-        // 글자 수 제한 체크 (10자)
-        if (newName.Length > 10)
-        {
-            Debug.LogWarning("⚠️ 닉네임은 10자를 초과할 수 없습니다.");
+            Debug.LogWarning($"⚠️ 닉네임은 비어있을 수 없으며 {NicknameValidator.MaxLength}자를 초과할 수 없습니다.");
             return false;
         }
 
         // 저장
-        PlayerPrefs.SetString(PREFS_KEY, newName);
-        PlayerPrefs.Save(); 
+        NicknameStore.Save(newName);
 
         return true;
     }
@@ -75,6 +63,6 @@ public class NicknameManager : MonoBehaviour
     /// <returns>저장된 닉네임 (가져오기 실패 시 "Guest_Error" 반환)</returns>
     public string GetNickname()
     {
-        return PlayerPrefs.GetString(PREFS_KEY, "Guest_Error");
+        return NicknameStore.Load("Guest_Error");
     }
 }

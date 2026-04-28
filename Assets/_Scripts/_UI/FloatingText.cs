@@ -87,7 +87,7 @@ public class FloatingText : MonoBehaviour
 
         if (timer >= destroyTime)
         {
-            PoolManager.Instance.Despawn(gameObject);
+            PoolService.Despawn(gameObject);
         }        
     }
 

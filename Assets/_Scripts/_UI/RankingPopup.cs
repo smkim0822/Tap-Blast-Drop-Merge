@@ -10,22 +10,6 @@ using System;
 /// </summary>
 public class RankingPopup : MonoBehaviour
 {
-    [Header("UI References (기본 UI 연결)")]
-    [Tooltip("랭킹 아이템들이 생성되어 배치될 부모 객체")]
-    public Transform contentParent;
-    [Tooltip("한 줄에 표시될 랭킹 아이템 프리팹")]
-    public RankingItem itemPrefab;
-    [Tooltip("인터넷 연결이 없을 때 띄워줄 오프라인 안내 메시지 객체")]
-    public GameObject offlineMessageObject;
-
-    [Header("My Rank References (내 순위 UI)")]
-    [Tooltip("하단에 고정될 내 닉네임 텍스트")]
-    public TextMeshProUGUI myNameText;
-    [Tooltip("하단에 고정될 내 등수 텍스트")]
-    public TextMeshProUGUI myRankText;
-    [Tooltip("하단에 고정될 내 점수 텍스트")]
-    public TextMeshProUGUI myScoreText;
-
     [Header("Nickname Edit UI (닉네임 수정 창 UI)")]
     [Tooltip("닉네임 수정 버튼")]
     public Button editNameButton;
@@ -62,9 +46,31 @@ public class RankingPopup : MonoBehaviour
     private Coroutine moveCoroutine;
     private Coroutine editAnimCoroutine;
     private Coroutine syncRoutine;
+    private RankingBoardView boardView;
+    private RankingSyncFlow rankingSyncFlow;
+    private bool isInitialized = false;
+
+    private void Awake()
+    {
+        EnsureInitialized();
+    }
 
     private void Start()
     {
+        EnsureInitialized();
+    }
+
+    private void EnsureInitialized()
+    {
+        if (isInitialized) return;
+
+        boardView = GetComponent<RankingBoardView>();
+        if (boardView == null)
+        {
+            boardView = gameObject.AddComponent<RankingBoardView>();
+        }
+        rankingSyncFlow = new RankingSyncFlow(this, boardView);
+
         // 버튼 및 입력창 이벤트 리스너 연결
         if (editNameButton != null)
         {
@@ -98,6 +104,8 @@ public class RankingPopup : MonoBehaviour
         {
             editPopupRoot.SetActive(false);
         }
+
+        isInitialized = true;
     }
 
     private void OnDestroy()
@@ -145,6 +153,7 @@ public class RankingPopup : MonoBehaviour
     {
         if (isAnimating) return;
 
+        EnsureInitialized();
         gameObject.SetActive(true);
 
         if (RankingManager.Instance != null)
@@ -167,163 +176,24 @@ public class RankingPopup : MonoBehaviour
         StartCoroutine(AnimateScale(popupWindow, popupWindow.localScale, Vector3.zero, animDuration, null, () => gameObject.SetActive(false)));
     }
 
-    // 오프라인 상태일 때 호출되어 로컬 데이터만으로 UI를 구성하는 함수
-    private void TriggerOfflineFallback()
-    {
-        ClearRankingItems();
-        if (offlineMessageObject != null)
-        {
-            offlineMessageObject.SetActive(true);
-        }
-        
-        // 로컬 데이터를 UI에 강제 렌더링
-        string currentName = NicknameManager.Instance?.GetNickname() ?? PlayerPrefs.GetString("PlayerName", "Guest");
-        int localHighScore = PlayerPrefs.GetInt("BestScore", 0);
-        UpdateMyRankUI(null, $"{currentName} <size=70%><color=#FF7B7B>(Offline)</color></size>", localHighScore);
-    }
-
     /// <summary>
     /// 랭킹 데이터를 서버에서 다시 불러와 UI 갱신.
     /// 네트워크가 끊겨있다면 오프라인 모드로 자동 전환.
     /// </summary>
     public void RefreshRanking()
     {
+        EnsureInitialized();
         if (syncRoutine != null)
         {
             StopCoroutine(syncRoutine);
         }
 
-        if (RankingManager.Instance == null || !RankingManager.Instance.IsNetworkReached())
-        {
-            TriggerOfflineFallback();
-            return;
-        }
-
-        if (offlineMessageObject != null)
-        {
-            offlineMessageObject.SetActive(false);
-        }
-        syncRoutine = StartCoroutine(SyncAndLoadRankingRoutine());
-    }
-
-    // 로컬 데이터를 서버에 동기화한 뒤 랭킹을 로드하는 코루틴
-    private IEnumerator SyncAndLoadRankingRoutine()
-    {
-        MyRankData serverMyData = null;
-        bool isMyRankLoaded = false;
-        bool isNetworkError = false;
-
-        // 서버에서 데이터 가져오기
-        StartCoroutine(RankingManager.Instance.GetMyRank((success, data) =>
-        {
-            if (!success)
-            {
-                isNetworkError = true;
-            }
-            serverMyData = data;
-            isMyRankLoaded = true;
-        }));
-
-        yield return new WaitUntil(() => isMyRankLoaded);
-
-        if (isNetworkError)
-        {
-            TriggerOfflineFallback();
-            yield break;
-        }
-
-        // 로컬에 저장된 정보 가져오기
-        string localName = NicknameManager.Instance?.GetNickname() ?? PlayerPrefs.GetString("PlayerName", "Guest");
-        int localHighScore = PlayerPrefs.GetInt("BestScore", 0);
-
-        bool needsNicknameSync = serverMyData == null || localName != serverMyData.name;
-        bool needsScoreSync = serverMyData == null ? (localHighScore > 0) : (localHighScore > serverMyData.score);
-
-        if (needsNicknameSync || needsScoreSync)
-        {
-            if (needsNicknameSync)
-            {
-                yield return StartCoroutine(RankingManager.Instance.UpdateNickname(localName));
-            }
-            if (needsScoreSync)
-            {
-                yield return StartCoroutine(RankingManager.Instance.PostScore(localHighScore));
-            }
-
-            isMyRankLoaded = false;
-            StartCoroutine(RankingManager.Instance.GetMyRank((success, data) =>
-            {
-                serverMyData = data;
-                isMyRankLoaded = true;
-            }));
-            yield return new WaitUntil(() => isMyRankLoaded);
-        }
-
-        // 내 순위 UI 업데이트
-        UpdateMyRankUI(serverMyData, localName, localHighScore);
-
-        // 전체 랭킹 리스트 로드
-        StartCoroutine(RankingManager.Instance.GetRanks((success, ranks) =>
-        {
-            if (success)
-            {
-                OnDataReceived(ranks);
-            }
-            else
-            {
-                TriggerOfflineFallback();
-            }
-        }));
-    }
-
-    private void UpdateMyRankUI(MyRankData myData, string displayName, int localBest = -1)
-    {
-        if (localBest == -1)
-        {
-            localBest = PlayerPrefs.GetInt("BestScore", 0);
-        }
-
-        if (myNameText != null)
-        {
-            string finalName = (myData != null && !string.IsNullOrEmpty(myData.name)) ? myData.name : displayName;
-            myNameText.text = finalName;
-        }
-
-        if (myRankText != null)
-        {
-            myRankText.text = (myData != null && myData.rank > 0) ? myData.rank.ToString() : "-";
-        }
-
-        int displayScore = myData != null ? Mathf.Max(myData.score, localBest) : localBest;
-        if (myScoreText != null)
-        {
-            myScoreText.text = displayScore.ToString("N0");
-        }
-    
-    }
-
-    private void ClearRankingItems()
-    {
-        foreach (Transform child in contentParent)
-        {
-            Destroy(child.gameObject);
-        }
-    }
-
-    void OnDataReceived(ScoreData[] ranks)
-    {
-        ClearRankingItems();
-        
-        if (ranks == null || ranks.Length == 0)
+        if (rankingSyncFlow == null)
         {
             return;
         }
 
-        for (int i = 0; i < ranks.Length; i++)
-        {
-            RankingItem newItem = Instantiate(itemPrefab, contentParent);
-            newItem.SetData(i + 1, ranks[i].name, ranks[i].score);
-        }
+        syncRoutine = rankingSyncFlow.RefreshRanking();
     }
 
     // --- 닉네임 수정 로직 ---
@@ -404,7 +274,10 @@ public class RankingPopup : MonoBehaviour
         if (NicknameManager.Instance != null && NicknameManager.Instance.SetNickname(newName))
         {
             CloseEditNamePopup();
-            StartCoroutine(SyncNicknameAndRefresh(newName));
+            if (rankingSyncFlow != null)
+            {
+                rankingSyncFlow.SyncNicknameAndRefresh(newName);
+            }
         }
     }
 
@@ -418,26 +291,6 @@ public class RankingPopup : MonoBehaviour
         saveNameButton.interactable = false;            // 즉시 비활성화
         yield return new WaitForSecondsRealtime(3f);    // 3초 대기
         saveNameButton.interactable = true;             // 복구
-    }
-
-    // 서버 통신이 끝날 때까지 기다렸다가 UI를 새로고침하는 코루틴
-    private IEnumerator SyncNicknameAndRefresh(string newName)
-    {
-        // 오프라인 시 닉네임 동기화 대기 취소 및 알림
-        if (RankingManager.Instance != null && !RankingManager.Instance.IsNetworkReached())
-        {
-            TriggerOfflineFallback();
-            yield break;
-        }
-
-        // 서버와 닉네임 동기화를 시작하고, 끝날 때까지 대기
-        if (RankingManager.Instance != null)
-        {
-            yield return StartCoroutine(RankingManager.Instance.UpdateNickname(newName));
-        }
-
-        // 최신 랭킹 리스트와 내 정보를 서버에서 다시 가져옴
-        RefreshRanking();
     }
 
     // --- 애니메이션 범용 함수 ---

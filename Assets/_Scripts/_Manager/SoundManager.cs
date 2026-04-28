@@ -41,7 +41,8 @@ public class SoundManager : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        GameEvents.OnPlaySFX += PlaySFX;
+        AudioEvents.OnPlaySfx += PlaySFX;
+        AudioEvents.OnRequestSetSoundMute += SetSoundMute;
     }
 
     /// <summary>
@@ -49,7 +50,8 @@ public class SoundManager : MonoBehaviour
     /// </summary>
     private void OnDisable()
     {
-        GameEvents.OnPlaySFX -= PlaySFX;
+        AudioEvents.OnPlaySfx -= PlaySFX;
+        AudioEvents.OnRequestSetSoundMute -= SetSoundMute;
     }
 
     /// <summary>
@@ -57,7 +59,7 @@ public class SoundManager : MonoBehaviour
     /// </summary>
     private void InitializeSettings()
     {
-        isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
+        isSoundOn = SoundSettingsStore.LoadIsSoundOn();
     }
 
     /// <summary>
@@ -105,7 +107,6 @@ public class SoundManager : MonoBehaviour
         isSoundOn = !isMute;
 
         // 설정을 기기에 저장
-        PlayerPrefs.SetInt("SoundOn", isSoundOn ? 1 : 0);
-        PlayerPrefs.Save();
+        SoundSettingsStore.SaveIsSoundOn(isSoundOn);
     }
 }

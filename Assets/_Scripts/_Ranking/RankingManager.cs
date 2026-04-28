@@ -1,7 +1,5 @@
 using System;
 using System.Collections;
-using System.Security.Cryptography;
-using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -50,10 +48,6 @@ public class RankingManager : MonoBehaviour
     /// 현재 서버가 정상적으로 응답하고 있는지 여부.
     /// </summary>
     public bool IsServerAlive { get; private set; } = false;
-
-    // 로컬 데이터 저장용 키값
-    private const string UUID_KEY = "PlayerUUID";
-    private const string LOCAL_HIGH_SCORE_KEY = "BestScore";
 
     void Awake()
     {
@@ -106,34 +100,12 @@ public class RankingManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 현재 기기의 UUID를 가져오거나, 없다면 새로 생성하여 저장.
-    /// </summary>
-    /// <returns></returns>
-    private string GetOrCreateUUID()
-    {
-        string uuid = PlayerPrefs.GetString(UUID_KEY, "");
-
-        if (string.IsNullOrEmpty(uuid))
-        {
-            uuid = Guid.NewGuid().ToString();
-            PlayerPrefs.SetString(UUID_KEY, uuid);
-            PlayerPrefs.Save();
-        }
-        return uuid;
-    }
-
-    /// <summary>
     /// 오프라인 상태를 대비하여 현재 점수를 로컬에 최고 점수로 백업.
     /// </summary>
     /// <param name="score">저장할 점수</param>
     private void SaveScoreLocally(int score)
     {
-        int currentLocalHigh = PlayerPrefs.GetInt(LOCAL_HIGH_SCORE_KEY, 0);
-        if (score > currentLocalHigh)
-        {
-            PlayerPrefs.SetInt(LOCAL_HIGH_SCORE_KEY, score);
-            PlayerPrefs.Save();
-        }
+        BestScoreStore.TrySaveIfHigher(score);
     }
 
     /// <summary>
@@ -152,9 +124,10 @@ public class RankingManager : MonoBehaviour
         }
 
         string playerName = NicknameManager.Instance.GetNickname();
-        string playerUUID = GetOrCreateUUID();
+        string playerUUID = RankingPlayerIdentityStore.GetOrCreateUuid();
         // 보안: 데이터 위변조 방지용 해시 생성
-        string hash = GenerateHash(playerName, score, playerUUID);
+        string secret = config != null ? config.secretKey : "dummy_secret_key";
+        string hash = RankingRequestSigner.GenerateScoreHash(playerName, score, playerUUID, secret);
 
         ScoreData data = new ScoreData()
         {
@@ -165,7 +138,7 @@ public class RankingManager : MonoBehaviour
         };
         string json = JsonUtility.ToJson(data);
 
-        using (UnityWebRequest request = CreateJsonRequest(config.GetBaseUrl() + "/rankings", "POST", json))
+        using (UnityWebRequest request = RankingWebRequestFactory.CreateJsonRequest(config.GetBaseUrl() + "/rankings", "POST", json))
         {
             yield return request.SendWebRequest();
             if (request.result == UnityWebRequest.Result.Success)
@@ -222,7 +195,7 @@ public class RankingManager : MonoBehaviour
             yield break;
         }
 
-        string url = $"{config.GetBaseUrl()}/rankings/{GetOrCreateUUID()}";
+        string url = $"{config.GetBaseUrl()}/rankings/{RankingPlayerIdentityStore.GetOrCreateUuid()}";
         using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
             request.timeout = 5;
@@ -288,11 +261,11 @@ public class RankingManager : MonoBehaviour
             yield break;
         }
 
-        string url = $"{config.GetBaseUrl()}/rankings/{GetOrCreateUUID()}/name";
+        string url = $"{config.GetBaseUrl()}/rankings/{RankingPlayerIdentityStore.GetOrCreateUuid()}/name";
         NicknameUpdateReq req = new NicknameUpdateReq { name = newName };
         string json = JsonUtility.ToJson(req);
 
-        using (UnityWebRequest request = CreateJsonRequest(url, "PATCH", json))
+        using (UnityWebRequest request = RankingWebRequestFactory.CreateJsonRequest(url, "PATCH", json))
         {
             yield return request.SendWebRequest();
             if (request.result == UnityWebRequest.Result.Success)
@@ -301,57 +274,10 @@ public class RankingManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"⚠️ 닉네임 동기화 실패: {request.error}");
+                string body = request.downloadHandler != null ? request.downloadHandler.text : "";
+                Debug.LogWarning($"⚠️ 닉네임 동기화 실패: {request.error}\nURL: {url}\nBody: {json}\nResp: {body}");
             }
         }
     }
 
-    /// <summary>
-    /// JSON 데이터를 Body에 담아 보내는 UnityWebRequest 객체를 생성하는 유틸리티 메서드.
-    /// </summary>
-    /// <param name="url"></param>
-    /// <param name="method"></param>
-    /// <param name="jsonBody"></param>
-    /// <returns></returns>
-    private UnityWebRequest CreateJsonRequest(string url, string method, string jsonBody)
-    {
-        UnityWebRequest request = new UnityWebRequest(url, method);
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
-      
-        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-        request.downloadHandler = new DownloadHandlerBuffer();
-      
-        request.SetRequestHeader("Content-Type", "application/json");
-        request.timeout = 5;
-       
-        return request;
-    }
-
-    /// <summary>
-    /// 데이터 변조를 막기 위해, 데이터와 시크릿 키를 조합하여 SHA256 해시를 생성.
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="score"></param>
-    /// <param name="uuid"></param>
-    /// <returns></returns>
-    private string GenerateHash(string name, int score, string uuid)
-    {
-        // 보안을 위해 ServerConfig의 시크릿 키 사용
-        string secret = config != null ? config.secretKey : "dummy_secret_key";
-        string input = $"{name}:{score}:{uuid}:{secret}";
-
-        using (SHA256 sha256 = SHA256.Create())
-        {
-            byte[] bytes = Encoding.UTF8.GetBytes(input);
-            byte[] hashBytes = sha256.ComputeHash(bytes);
-            StringBuilder builder = new StringBuilder();
-
-            // 바이트 배열을 16진수 문자열로 변환
-            foreach (byte b in hashBytes)
-            {
-                builder.Append(b.ToString("x2"));
-            }
-            return builder.ToString();
-        }
-    }
 }

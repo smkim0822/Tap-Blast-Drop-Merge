@@ -25,13 +25,43 @@
 
 ## 🛠️ 기술 스택 (Tech Stack)
 * **Client (Game Engine):** Unity 6 (6000.3.8f1), C#
-* **Architecture & Pattern:** Singleton Pattern
+* **Architecture & Pattern:** 단일 Entry(`GameManager`) + 세션 플로우 분리 + 이벤트 기반(세션/점수/오디오) + 서비스/스토어 분리
 * **Communication & Security:** REST API (UnityWebRequest), HTTPS (SSL/TLS)
+
+## 🧱 아키텍처 (Architecture)
+프로젝트 초기에는 여러 책임이 `GameManager`, `ScoreManager`, `RankingPopup/Manager` 등에 집중되어 결합도가 높았습니다. 현재는 **역할(Responsibility) 단위로 컴포넌트/서비스를 분리**해, 유지보수와 디버깅 비용을 낮추는 방향으로 개선했습니다.
+
+### 게임 세션 플로우
+- **`GameManager`**: 씬 진입점(Entry) + 레퍼런스 조립 최소화
+- **`GameSessionFlow`**: 상태 전이(메인/플레이/게임오버), 재시작/메인복귀, 서버 점수 동기화 플로우
+- **`GameUIRoots`**: 메인/게임오버/플레이 UI 루트 활성화 및 플레이어 배치
+- **`GameplayWorldReset`**: 풀 오브젝트/스택/이펙트 등 월드 리셋
+
+### 점수(단일 소스) + HUD 뷰 분리
+- **`BestScoreStore`**: 최고점수 저장소(PlayerPrefs 캡슐화)
+- **`ScoreState`**: 현재점수/최고점수의 순수 상태 모델
+- **`ScoreHudView`**: 점수 텍스트/펀치 애니메이션 등 시각 요소 담당
+
+### 랭킹 UI/동기화 분리
+- **`RankingBoardView`**: 리스트 렌더링/오프라인·로딩 표시/내 랭크 표시
+- **`RankingSyncFlow`**: 닉네임/점수 동기화 및 랭킹 로딩 플로우(중복 요청 방지 포함)
+- **`RankingPlayerIdentityStore` / `RankingRequestSigner` / `RankingWebRequestFactory`**: UUID/해시/요청 생성 책임 분리
+
+### 풀링 안정화
+- **`PoolService`**: `PoolManager` 의존을 완화한 파사드(없으면 Instantiate/Destroy 폴백)
+- **`PoolManager`**: 풀 상한(`maxPooledPerPrefab`) 및 null 엔트리 정리로 안정성 강화
+
+## 🧰 마이그레이션 (Scene Reference Migration)
+리팩토링 과정에서 기존 컴포넌트에 들어있던 인스펙터 레퍼런스를 새 컴포넌트로 옮겨야 하는 경우가 있습니다.
+
+- **메뉴**: `Dev/Migrate Refactor References (Active Scene)`
+- **역할**: 활성 씬에서 `GameManager/ScoreManager/Spawner/RankingPopup` 등 레퍼런스를 새 컴포넌트(`GameUIRoots`, `ScoreHudView`, `SpawnerVisuals`, `RankingBoardView`)로 복사
 
 ## 🔗 관련 프로젝트 (Related Project)
 * [[랭킹 서버 레포지토리 (RankingServer)]](https://github.com/romantic02/RankingServer)
 
 ## 📅 개발 히스토리 (Change Log)
+* **v0.8.4:** 결합도 높은 매니저/로직 리팩토링(세션 플로우 분리, 점수 단일 소스, 랭킹 동기화/뷰 분리, 풀 안정화), 운영 서버 Base URL/포트 처리 보강
 * **v0.8.3:** 닉네임 한글 입력(IME) 시스템 구축, 정적 폰트 아틀라스 렌더링 최적화 (OOM 및 Tofu 현상 방지)
 * **v0.8.2:** 에뮬레이터 및 실기기 환경 오프라인 UI 동기화 결함 수정, 비동기 레이스 컨디션(Race Condition) 최적화
 * **v0.8.1:** 오프라인 랭킹 예외 처리, 데이터 유실 방지(로컬 백업) 및 지연 동기화 파이프라인 구축

@@ -23,13 +23,13 @@ public class GameOverZone : MonoBehaviour
     // 옵저버 구독: 오브젝트가 켜질 때 새 게임 시작 이벤트를 듣기 시작
     void OnEnable()
     {
-        GameEvents.OnGameStart += ResetStatus;
+        SessionEvents.OnGameStart += ResetStatus;
     }
 
     // 옵저버 해제: 에러 방지를 위해 꺼질 때 구독 해제
     void OnDisable()
     {
-        GameEvents.OnGameStart -= ResetStatus;
+        SessionEvents.OnGameStart -= ResetStatus;
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ public class GameOverZone : MonoBehaviour
         blinkPhase = 0f;
         stackList.Clear();
         
-        GameEvents.OnGameOver?.Invoke();
+        SessionEvents.OnGameOver?.Invoke();
     }
 
     // 닿으면 명단에 추가

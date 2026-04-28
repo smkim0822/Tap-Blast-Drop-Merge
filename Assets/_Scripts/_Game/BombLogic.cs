@@ -14,15 +14,6 @@ public class BombLogic : MonoBehaviour
     public float minSize = 0.1f;        // 최소 크기
     public float maxSize = 0.6f;        // 최대 크기
 
-    // 같은 턴/폭탄에서 나온 공들을 그룹화하기 위한 전역 카운터
-    public static int globalBatchIdCounter = 0;
-
-    // 배치 ID 초기화 함수 (GameManager에서 호출)
-    public static void ResetBatchId()
-    {
-        globalBatchIdCounter = 0;
-    }
-
     private bool hasExploded = false;   // 중복 폭발 방지용 플래그
     private SpriteRenderer myRenderer;
     private Sprite myElementSprite;
@@ -79,7 +70,7 @@ public class BombLogic : MonoBehaviour
         Sprite spriteToPass = (myElementSprite != null) ? myElementSprite : myRenderer.sprite;
 
         // 고유 번호 발급
-        int myBatchId = globalBatchIdCounter++;
+        int myBatchId = GameplayBatchSequence.Next();
 
         for (int i = 0; i < grainCount; i++)
         {
@@ -87,7 +78,7 @@ public class BombLogic : MonoBehaviour
             Vector3 randomPos = transform.position + (Vector3)(Random.insideUnitCircle * 0.4f);
 
             // 풀링
-            GameObject grainObj = PoolManager.Instance.Spawn(grainPrefab, randomPos, Quaternion.identity);
+            GameObject grainObj = PoolService.Spawn(grainPrefab, randomPos, Quaternion.identity);
 
             // 크기 랜덤 설정
             float randomScale = Random.Range(minSize, maxSize);
@@ -118,6 +109,6 @@ public class BombLogic : MonoBehaviour
         }
 
         // 폭탄 반환
-        PoolManager.Instance.Despawn(gameObject);
+        PoolService.Despawn(gameObject);
     }
 }
