@@ -4079,6 +4079,13 @@ MonoBehaviour:
   - {fileID: 1325179589}
   guideLine: {fileID: 0}
   groundY: -4.5
+  useRaycastForGround: 1
+  groundRaycastMask:
+    serializedVersion: 2
+    m_Bits: 1
+  groundRaycastDistance: 50
+  groundRaycastOffsetY: 0
+  groundColliderOverride: {fileID: 1936569005}
   lineTextureScale: 1
   spawnCurve:
     serializedVersion: 2

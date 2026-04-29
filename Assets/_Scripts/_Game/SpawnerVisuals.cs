@@ -13,7 +13,18 @@ public class SpawnerVisuals : MonoBehaviour
 
     [Header("Guide Line (표시선 설정)")]
     [SerializeField] LineRenderer guideLine;
+    [Tooltip("표시선 끝점이 닿을 바닥 Y값(레이캐스트가 실패했을 때만 사용)")]
     [SerializeField] float groundY = -4.5f;
+    [Tooltip("표시선 끝점을 고정값 대신 아래 방향 레이캐스트로 계산합니다.")]
+    [SerializeField] bool useRaycastForGround = true;
+    [Tooltip("바닥/벽 콜라이더가 포함된 레이어 마스크")]
+    [SerializeField] LayerMask groundRaycastMask = ~0;
+    [Tooltip("아래 방향 레이캐스트 최대 거리")]
+    [SerializeField] float groundRaycastDistance = 50f;
+    [Tooltip("바닥 접점에서 위/아래로 보정할 오프셋")]
+    [SerializeField] float groundRaycastOffsetY = 0f;
+    [Tooltip("레이캐스트가 실패하더라도 라인이 바닥을 '뚫지' 않도록 기준이 되는 바닥 콜라이더(권장: Bottom Wall)")]
+    [SerializeField] Collider2D groundColliderOverride;
     [SerializeField] float lineTextureScale = 1f;
 
     [Header("Animation Settings (애니메이션 곡선 및 시간)")]
@@ -58,7 +69,49 @@ public class SpawnerVisuals : MonoBehaviour
     {
         if (guideLine == null) return;
 
-        Vector3 endPos = new Vector3(currentPos.x, groundY, 0f);
+        float endY = groundY;
+        // 바닥 콜라이더가 지정되어 있으면, 바닥 상단 Y를 하한으로 사용
+        // (레이캐스트가 실패하더라도 바닥 아래로 내려가지 않게)
+        float minGroundY = float.NegativeInfinity;
+        if (groundColliderOverride != null)
+        {
+            minGroundY = groundColliderOverride.bounds.max.y;
+        }
+        if (useRaycastForGround)
+        {
+            var filter = new ContactFilter2D
+            {
+                useLayerMask = true,
+                layerMask = groundRaycastMask,
+                useTriggers = false, // GameOverLine 같은 Trigger는 무시
+            };
+
+            // 여러 콜라이더(공/폭탄/이펙트) 위를 지나칠 수 있으니,
+            // Dynamic Rigidbody2D는 스킵하고 "벽/바닥(Static 또는 Rigidbody 없음)"을 첫 히트로 사용.
+            RaycastHit2D[] hits = new RaycastHit2D[16];
+            int hitCount = Physics2D.Raycast(currentPos, Vector2.down, filter, hits, groundRaycastDistance);
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider2D col = hits[i].collider;
+                if (col == null) continue;
+
+                Rigidbody2D rb = col.attachedRigidbody;
+                if (rb != null && rb.bodyType == RigidbodyType2D.Dynamic)
+                {
+                    continue; // 공/폭탄 등 동적 오브젝트 무시
+                }
+
+                endY = hits[i].point.y + groundRaycastOffsetY;
+                break;
+            }
+        }
+
+        if (minGroundY > float.NegativeInfinity)
+        {
+            endY = Mathf.Max(endY, minGroundY + groundRaycastOffsetY);
+        }
+
+        Vector3 endPos = new Vector3(currentPos.x, endY, 0f);
         guideLine.SetPosition(0, currentPos);
         guideLine.SetPosition(1, endPos);
 
