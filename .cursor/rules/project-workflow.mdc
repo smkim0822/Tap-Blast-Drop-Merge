@@ -1,0 +1,12 @@
+---
+description: GitHub 워크플로·이슈·PR·커밋 규칙
+globs: "*"
+alwaysApply: true
+---
+
+이 저장소에서 코드·문서·씬을 바꿀 때는 `docs/WORKFLOW.md`를 따른다.
+
+- 기본 브랜치는 `develop`. 새 작업은 이슈 발행 후 `feature/`, `fix/`, `design/` 등으로 브랜치를 만든다.
+- 커밋 메시지는 루트 `.gitmessage`와 `docs/COMMIT_CONVENTION.md` 형식을 맞춘다 (type + 한 줄 제목, 필요 시 본문, `Closes #번호`).
+- Pull Request는 `.github/pull_request_template.md` 항목을 채운다.
+- GitHub 이슈는 `.github/ISSUE_TEMPLATE/task.md` 형식을 사용한다.
