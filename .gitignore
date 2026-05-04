@@ -74,5 +74,8 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
+# Unity 에디터 씬 복구/백업(로컬, 커밋 불필요)
+/[Aa]ssets/_Recovery/
+
 # 서버 주소와 키
 Assets/_Resources/ServerConfig.asset
