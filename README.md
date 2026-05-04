@@ -57,6 +57,10 @@
 - **메뉴**: `Dev/Migrate Refactor References (Active Scene)`
 - **역할**: 활성 씬에서 `GameManager/ScoreManager/Spawner/RankingPopup` 등 레퍼런스를 새 컴포넌트(`GameUIRoots`, `ScoreHudView`, `SpawnerVisuals`, `RankingBoardView`)로 복사
 
+## 🔀 개발 워크플로
+
+이슈 → 브랜치 → PR 순서와 커밋·템플릿 규칙은 **[docs/WORKFLOW.md](docs/WORKFLOW.md)** 를 참고합니다.
+
 ## 🔗 관련 프로젝트 (Related Project)
 * [[랭킹 서버 레포지토리 (RankingServer)]](https://github.com/romantic02/RankingServer)
 
