@@ -4081,7 +4081,7 @@ MonoBehaviour:
   nextBombFocusAlpha: 1
   nextBombDimAlpha: 0.25
   nextBombFocusScale: 0.75
-  nextBombDimScale: 0.6
+  nextBombDimScale: 0.75
   guideLine: {fileID: 0}
   groundY: -4.5
   useRaycastForGround: 1
