@@ -10,6 +10,16 @@ public class SpawnerVisuals : MonoBehaviour
 {
     [Header("UI References (UI 연결)")]
     [SerializeField] Image[] nextBombUIs;
+    
+    [Header("Next Bomb Preview (다음 폭탄 예고)")]
+    [Tooltip("다음에 나올 폭탄(1번)을 강조할 때의 알파")]
+    [SerializeField, Range(0f, 1f)] float nextBombFocusAlpha = 1.0f;
+    [Tooltip("다다음/다다다음 폭탄(2~N번)을 표시할 때의 알파")]
+    [SerializeField, Range(0f, 1f)] float nextBombDimAlpha = 0.25f;
+    [Tooltip("다음에 나올 폭탄(1번) 스케일")]
+    [SerializeField] float nextBombFocusScale = 0.75f;
+    [Tooltip("다다음/다다다음 폭탄(2~N번) 스케일")]
+    [SerializeField] float nextBombDimScale = 0.75f;
 
     [Header("Guide Line (표시선 설정)")]
     [SerializeField] LineRenderer guideLine;
@@ -156,14 +166,19 @@ public class SpawnerVisuals : MonoBehaviour
             if (i >= nextElements.Count) continue;
 
             Image targetUI = nextBombUIs[i];
-            targetUI.sprite = nextElements[i].sprite;
+            // SpawnerQueue는 "다음에 나올 원소"를 리스트의 마지막에 두도록 운용됩니다.
+            // 따라서 UI의 1번 슬롯(가장 왼쪽)이 '다음 폭탄'이 되도록 역순으로 매핑합니다.
+            int srcIndex = nextElements.Count - 1 - i;
+            if (srcIndex < 0 || srcIndex >= nextElements.Count) continue;
+            targetUI.sprite = nextElements[srcIndex].sprite;
 
-            bool isNextBomb = (i == nextElements.Count - 1);
+            // UI 배열의 0번(가장 왼쪽/첫 슬롯)을 "다음 폭탄"으로 취급합니다.
+            bool isNextBomb = (i == 0);
             Color uiColor = Color.white;
-            uiColor.a = isNextBomb ? 1.0f : 0.5f;
+            uiColor.a = isNextBomb ? nextBombFocusAlpha : nextBombDimAlpha;
             targetUI.color = uiColor;
 
-            float targetScale = 0.8f;
+            float targetScale = isNextBomb ? nextBombFocusScale : nextBombDimScale;
             if (playAnim)
             {
                 StartCoroutine(AnimateScale(targetUI.rectTransform, uiPunchCurve, uiAnimDuration, Vector3.one * targetScale));
