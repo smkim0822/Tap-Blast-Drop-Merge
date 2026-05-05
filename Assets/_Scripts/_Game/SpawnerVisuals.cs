@@ -166,7 +166,11 @@ public class SpawnerVisuals : MonoBehaviour
             if (i >= nextElements.Count) continue;
 
             Image targetUI = nextBombUIs[i];
-            targetUI.sprite = nextElements[i].sprite;
+            // SpawnerQueue는 "다음에 나올 원소"를 리스트의 마지막에 두도록 운용됩니다.
+            // 따라서 UI의 1번 슬롯(가장 왼쪽)이 '다음 폭탄'이 되도록 역순으로 매핑합니다.
+            int srcIndex = nextElements.Count - 1 - i;
+            if (srcIndex < 0 || srcIndex >= nextElements.Count) continue;
+            targetUI.sprite = nextElements[srcIndex].sprite;
 
             // UI 배열의 0번(가장 왼쪽/첫 슬롯)을 "다음 폭탄"으로 취급합니다.
             bool isNextBomb = (i == 0);
