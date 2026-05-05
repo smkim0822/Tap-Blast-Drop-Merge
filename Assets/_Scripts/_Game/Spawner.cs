@@ -23,6 +23,10 @@ public class Spawner : MonoBehaviour
 
     [Tooltip("재장전 시간")]
     public float cooldownTime = 0.5f;
+    
+    [Tooltip("스포너에서 생성되는 폭탄의 스케일 배율(플레이 영역에 맞게 조정)")]
+    [Range(0.5f, 1.2f)]
+    public float bombScaleMultiplier = 0.85f;
 
     [Header("Elements (폭탄 데이터)")]
     public ElementData[] elements;
@@ -148,6 +152,9 @@ public class Spawner : MonoBehaviour
         if (bombPrefab != null)
         {
             GameObject newBomb = PoolService.Spawn(bombPrefab, transform.position, Quaternion.identity);
+            // 풀링 오브젝트는 이전 스케일이 남을 수 있으므로, 프리팹 기준 스케일로 재설정 후 배율 적용
+            Vector3 baseScale = bombPrefab.transform.localScale;
+            newBomb.transform.localScale = new Vector3(baseScale.x * bombScaleMultiplier, baseScale.y * bombScaleMultiplier, baseScale.z);
             visuals.PlaySpawnAnimation(newBomb.transform);
 
             if (newBomb.TryGetComponent(out BombLogic bombLogic))

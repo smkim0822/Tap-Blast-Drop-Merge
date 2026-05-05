@@ -17,9 +17,9 @@ public class SpawnerVisuals : MonoBehaviour
     [Tooltip("다다음/다다다음 폭탄(2~N번)을 표시할 때의 알파")]
     [SerializeField, Range(0f, 1f)] float nextBombDimAlpha = 0.25f;
     [Tooltip("다음에 나올 폭탄(1번) 스케일")]
-    [SerializeField] float nextBombFocusScale = 0.9f;
+    [SerializeField] float nextBombFocusScale = 0.75f;
     [Tooltip("다다음/다다다음 폭탄(2~N번) 스케일")]
-    [SerializeField] float nextBombDimScale = 0.75f;
+    [SerializeField] float nextBombDimScale = 0.6f;
 
     [Header("Guide Line (표시선 설정)")]
     [SerializeField] LineRenderer guideLine;
