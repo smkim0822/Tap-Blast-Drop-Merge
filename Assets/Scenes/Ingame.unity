@@ -3877,9 +3877,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bombPrefab: {fileID: 8619092646198070267, guid: d29662b69e4d37148837ab3fd8e20eeb, type: 3}
-  xLimit: 2
   cooldownTime: 0.5
   bombScaleMultiplier: 0.85
+  leftWall: {fileID: 1523993846}
+  rightWall: {fileID: 822299132}
+  xLimit: 2
   elements:
   - name: Red
     sprite: {fileID: 21300000, guid: 49cb0e0179cf4b444a25b2510241e97d, type: 3}
