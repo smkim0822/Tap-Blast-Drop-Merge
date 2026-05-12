@@ -48,14 +48,18 @@ GitHub Actions의 `schedule` cron은 **정확한 시각을 보장하지 않습�
    - Compartment: 인스턴스가 있는 컴파트먼트
    - Metric namespace: `oci_computeagent`
    - Metric name: `CpuUtilization`
-   - Interval: `1 day`, Statistic: `Mean` (또는 `Percentile`)
+   - **Interval: `1d`** (= 1 day) — 한 데이터 포인트가 **24시간 윈도우로 집계**되도록
+   - Statistic: `Mean` (또는 `P95`)
 3. **Trigger rule**
    - Operator: `less than`
-   - Value: `15` (%) — 임계치 20%보다 살짝 보수적으로
-   - Trigger delay minutes: `8640` (= 6일). 임계 미달이 6일 지속되면 알람 발화
+   - Value: `15` (%) — Oracle 임계치(20%)보다 5%p 보수적으로
+   - **Trigger Delay Minutes: `60`** (1~1440 사이 아무 값이나 OK)
+
+> OCI의 `pendingDuration`(콘솔의 "Trigger Delay Minutes") 허용 범위는 **1~1440분(최대 24시간)** 입니다. 6일 같은 큰 값을 직접 넣을 수 없습니다(`PT144H must be within [PT1M, PT24H]` 오류). 대신 **Interval을 `1d`로 길게 잡으면 한 데이터 포인트 자체가 24시간 평균**이라, 짧은 Trigger Delay만으로도 "최근 하루 평균 사용량이 낮음" 조건이 곧바로 발화합니다. 회수 7일 누적 정책보다 한참 빨라 안전 마진이 충분합니다.
+
 4. **Destinations**: `Notifications` 토픽 만들어 본인 이메일 구독
 
-이러면 keep-alive가 어떤 이유로 끊겨도 회수 2일 전쯤 메일이 옵니다.
+이러면 keep-alive가 어떤 이유로 끊겨 1일 평균 CPU가 15% 미만으로 떨어지는 즉시 메일이 옵니다 — 회수까지 며칠 여유.
 
 ### 3-2. 외부 모니터링 핑 (선택)
 
