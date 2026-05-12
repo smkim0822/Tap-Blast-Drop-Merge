@@ -20,10 +20,10 @@ public class ServerConfig : ScriptableObject
     [Tooltip("접속할 서버 환경을 선택. (Local: 테스트용, Production: 실서비스용)")]
     public ServerEnvironment environment = ServerEnvironment.Production;
 
-    [Tooltip("실제 운영 서버의 도메인 입력.")]
+    [Tooltip("실제 운영 서버 주소. 도메인만(예: pd-ranking.duckdns.org) 입력하거나, 권장 형식인 풀 URL(예: https://pd-ranking.duckdns.org)을 입력합니다.")]
     public string oracleIp;
 
-    [Tooltip("운영 서버 포트 (포트 미입력 시 기본값). 보통 Spring Boot는 8080")]
+    [Tooltip("운영 서버 포트 (포트 미입력 시 기본값). 풀 URL(http(s)://...)을 입력했다면 무시됩니다.")]
     public int productionPort = 8080;
 
     [Header("Security (보안)")]
@@ -43,14 +43,14 @@ public class ServerConfig : ScriptableObject
         }
 
         // 실제 운영 환경용 주소
-        // - oracleIp에 "158.179.164.153" 처럼 IP만 넣어도 동작하도록 기본값을 보정합니다.
-        // - 이미 "http(s)://..." 형태로 입력되면 그대로 사용합니다.
-        // - 포트가 없으면 Spring 기본(8080)을 붙입니다.
+        // - oracleIp에 도메인(예: "pd-ranking.duckdns.org")만 넣어도 동작하도록 기본값을 보정합니다.
+        // - 이미 "http(s)://..." 형태(권장)로 입력되면 그대로 사용합니다.
+        // - 스킴이 없으면 http로 시작하고, 포트도 없으면 Spring 기본(productionPort)을 붙입니다.
         // - /api가 없으면 붙입니다.
         if (string.IsNullOrWhiteSpace(oracleIp))
         {
-            // 실수로 비워둔 경우를 대비한 안전한 기본값(로컬은 아님)
-            return "http://158.179.164.153:8080/api";
+            // 실수로 비워둔 경우를 대비한 안전한 기본값(로컬은 아님). HTTPS 도메인을 사용.
+            return "https://pd-ranking.duckdns.org/api";
         }
 
         string raw = oracleIp.Trim();
