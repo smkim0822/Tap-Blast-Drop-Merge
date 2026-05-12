@@ -18,15 +18,22 @@ public class Spawner : MonoBehaviour
     [Tooltip("생성할 폭탄 프리팹")]
     public GameObject bombPrefab;
 
-    [Tooltip("화면 좌우 이동 제한 범위 (X축)")]
-    public float xLimit = 2.0f;
-
     [Tooltip("재장전 시간")]
     public float cooldownTime = 0.5f;
-    
+
     [Tooltip("스포너에서 생성되는 폭탄의 스케일 배율(플레이 영역에 맞게 조정)")]
     [Range(0.5f, 1.2f)]
     public float bombScaleMultiplier = 0.85f;
+
+    [Header("Play area (X축 제한)")]
+    [Tooltip("플레이 영역 좌측 벽의 Collider2D (비어 있으면 이름 \"Left Wall\"으로 찾음)")]
+    [SerializeField] private Collider2D leftWall;
+
+    [Tooltip("플레이 영역 우측 벽의 Collider2D (비어 있으면 이름 \"Right Wall\"으로 찾음)")]
+    [SerializeField] private Collider2D rightWall;
+
+    [Tooltip("좌우 벽을 찾지 못했을 때만 사용하는 X 반경 (절대값, -xLimit ~ xLimit)")]
+    public float xLimit = 2.0f;
 
     [Header("Elements (폭탄 데이터)")]
     public ElementData[] elements;
@@ -49,6 +56,79 @@ public class Spawner : MonoBehaviour
             visuals = gameObject.AddComponent<SpawnerVisuals>();
         }
         queue = new SpawnerQueue(elements, visuals.PreviewCount);
+
+        ResolveWallColliders();
+    }
+
+    /// <summary>
+    /// 인스펙터에 벽이 없으면 씬의 Left Wall / Right Wall에서 Collider2D를 찾습니다.
+    /// </summary>
+    void ResolveWallColliders()
+    {
+        if (leftWall == null)
+        {
+            GameObject go = GameObject.Find("Left Wall");
+            if (go != null) go.TryGetComponent(out leftWall);
+        }
+        if (rightWall == null)
+        {
+            GameObject go = GameObject.Find("Right Wall");
+            if (go != null) go.TryGetComponent(out rightWall);
+        }
+    }
+
+    /// <summary>
+    /// 스포너 중심이 머물 수 있는 월드 X 구간 [minX, maxX].
+    /// 좌우 벽 안쪽 면에서 다시 폭탄 반경만큼 안쪽으로 들여, 폭탄 끝이 벽에 닿도록 한다.
+    /// </summary>
+    void GetHorizontalClampBounds(out float minX, out float maxX)
+    {
+        float outerMin, outerMax;
+        if (leftWall != null && rightWall != null)
+        {
+            float innerLeft = leftWall.bounds.max.x;
+            float innerRight = rightWall.bounds.min.x;
+            outerMin = Mathf.Min(innerLeft, innerRight);
+            outerMax = Mathf.Max(innerLeft, innerRight);
+        }
+        else
+        {
+            outerMin = -xLimit;
+            outerMax = xLimit;
+        }
+
+        float pad = GetBombHalfWidth();
+        minX = outerMin + pad;
+        maxX = outerMax - pad;
+
+        // 폭탄이 영역보다 큰 비정상 케이스: 중앙으로 고정
+        if (minX > maxX)
+        {
+            float mid = (outerMin + outerMax) * 0.5f;
+            minX = maxX = mid;
+        }
+    }
+
+    /// <summary>
+    /// 스폰될 폭탄의 월드 기준 가로 반경.
+    /// CircleCollider2D가 있으면 그 반경을, 없으면 다른 Collider2D의 X extents를 사용한다.
+    /// </summary>
+    float GetBombHalfWidth()
+    {
+        if (bombPrefab == null) return 0f;
+
+        float localHalfWidth = 0f;
+        if (bombPrefab.TryGetComponent(out CircleCollider2D circle))
+        {
+            localHalfWidth = circle.radius;
+        }
+        else if (bombPrefab.TryGetComponent(out Collider2D anyCol))
+        {
+            localHalfWidth = anyCol.bounds.extents.x;
+        }
+
+        Vector3 prefabScale = bombPrefab.transform.localScale;
+        return localHalfWidth * Mathf.Abs(prefabScale.x) * Mathf.Abs(bombScaleMultiplier);
     }
 
     void Start()
@@ -135,8 +215,8 @@ public class Spawner : MonoBehaviour
         // 마우스 화면 좌표 -> 월드 좌표로 변환
         Vector3 mousePos = mainCam.ScreenToWorldPoint(Input.mousePosition);
 
-        // X축 이동 제한 (Clamp)
-        float clampedX = Mathf.Clamp(mousePos.x, -xLimit, xLimit);
+        GetHorizontalClampBounds(out float minX, out float maxX);
+        float clampedX = Mathf.Clamp(mousePos.x, minX, maxX);
 
         // 이동
         transform.position = new Vector3(clampedX, transform.position.y, transform.position.z);
@@ -187,7 +267,9 @@ public class Spawner : MonoBehaviour
         isDragging = false;
         isReloading = false;
 
-        transform.position = new Vector3(0f, transform.position.y, 0f);
+        GetHorizontalClampBounds(out float minX, out float maxX);
+        float resetX = Mathf.Clamp(0f, minX, maxX);
+        transform.position = new Vector3(resetX, transform.position.y, transform.position.z);
 
         visuals.ResetVisualState();
         queue.Reset();
