@@ -1,0 +1,71 @@
+name: keep-oci-alive
+
+# OCI Always Free 컴퓨트 인스턴스의 "유휴(idle) 회수" 정책을 회피하기 위해
+# 주기적으로 랭킹 서버 헬스체크를 호출해 CPU/네트워크 카운터를 깨워둔다.
+# 자세한 배경과 보조 안전망은 docs/OCI_KEEPALIVE.md 참고.
+
+on:
+  schedule:
+    # 10분 간격. GitHub Actions cron은 정확도가 보장되지 않으나, 하루 ~144회면 충분.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-oci-alive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping ranking server health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Resolve target URL
+        id: target
+        env:
+          # 저장소 Variables에서 OCI_HEALTH_URL 설정 시 그 값을 사용 (e.g. https://example/api/health).
+          # 미설정이면 ServerConfig.cs의 운영 폴백 주소를 사용한다.
+          OCI_HEALTH_URL: ${{ vars.OCI_HEALTH_URL }}
+        run: |
+          url="${OCI_HEALTH_URL:-http://158.179.164.153:8080/api/health}"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Pinging: $url"
+
+      - name: Health check (curl)
+        env:
+          URL: ${{ steps.target.outputs.url }}
+        run: |
+          set -u
+          attempts=3
+          last_status=""
+          last_body=""
+
+          for i in $(seq 1 "$attempts"); do
+            echo "::group::Attempt $i"
+            tmp_body="$(mktemp)"
+
+            # -m 10  : 10초 timeout (TCP+TLS+응답)
+            # -s -S  : 출력은 조용하되 에러는 표시
+            # -o     : 본문은 파일로
+            # -w     : 마지막에 HTTP 상태코드만 stdout
+            last_status="$(curl -m 10 -sS -o "$tmp_body" -w "%{http_code}" "$URL" || echo "000")"
+            last_body="$(cat "$tmp_body" | tr -d '\r\n')"
+            rm -f "$tmp_body"
+
+            echo "status=$last_status body=$last_body"
+            echo "::endgroup::"
+
+            if [ "$last_status" = "200" ] && [ "$last_body" = "ok" ]; then
+              echo "Ranking server responded OK."
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          # 핑 자체는 발생했으므로 idle 카운터 목적에는 충분.
+          # 다만 서버 상태가 의심되니 warning으로 남겨 Actions UI에서 확인 가능하게 한다.
+          echo "::warning::Health check did not return 200/ok after $attempts attempts (last status=$last_status, body=$last_body)."
