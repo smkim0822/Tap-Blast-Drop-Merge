@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 8e6db4820e201254c8bc3cf8cd76e254
+guid: 4ba0edbb2d66a9c4b9a92776a24e3b7e
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -5279218547217668833
-    second: 3.settings_button_bgm_0
+      213: -6086247107295719604
+    second: button_settingsplay_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -75,7 +75,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -109,30 +109,17 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 4
-    buildTarget: WebGL
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: 3.settings_button_bgm_0
+      name: button_settingsplay_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 188
-        height: 188
+        width: 586
+        height: 160
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f15ef69a3b27cb6b0800000000000000
-      internalID: -5279218547217668833
+      spriteID: c4fc362908e498ba0800000000000000
+      internalID: -6086247107295719604
       vertices: []
       indices: 
       edges: []
@@ -161,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      3.settings_button_bgm_0: -5279218547217668833
+      button_settingsplay_0: -6086247107295719604
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
