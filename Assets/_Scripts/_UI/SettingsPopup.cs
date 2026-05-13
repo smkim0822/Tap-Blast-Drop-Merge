@@ -11,7 +11,8 @@ public class SettingsPopup : MonoBehaviour
     [Header("Buttons (버튼 연결)")]
     [Tooltip("효과음 켜기/끄기 토글 버튼")]
     [SerializeField] private Button soundButton;
-    // [SerializeField] private Button musicButton;
+    [Tooltip("랭킹 팝업 열기 버튼")]
+    [SerializeField] private Button rankingButton;
     [Tooltip("다시하기 버튼")]
     [SerializeField] private Button retryButton;
     [Tooltip("메인으로 버튼")]
@@ -20,6 +21,8 @@ public class SettingsPopup : MonoBehaviour
     [SerializeField] private Button closeButton;
     [Tooltip("배경 영역")]
     [SerializeField] private Button backgroundButton;
+    [Tooltip("랭킹 버튼을 눌렀을 때 띄워줄 랭킹 팝업 객체")]
+    [SerializeField] private RankingPopup rankingPopup;
 
     [Header("Icons (아이콘)")]
     [Tooltip("효과음 ON/OFF 이미지")]
@@ -30,6 +33,26 @@ public class SettingsPopup : MonoBehaviour
     [SerializeField] private Sprite soundOnSprite;
     [Tooltip("효과음 OFF 이미지")]
     [SerializeField] private Sprite soundOffSprite;
+
+    [Header("Volume Toggle Switch (볼륨 토글 스위치)")]
+    [Tooltip("토글 배경 이미지")]
+    [SerializeField] private Image soundToggleBackgroundImage;
+    [Tooltip("토글 손잡이 이미지")]
+    [SerializeField] private Image soundToggleKnobImage;
+    [Tooltip("토글 손잡이 RectTransform")]
+    [SerializeField] private RectTransform soundToggleKnob;
+    [Tooltip("효과음 ON일 때 손잡이 위치")]
+    [SerializeField] private Vector2 soundToggleOnPosition = new Vector2(45f, 0f);
+    [Tooltip("효과음 OFF일 때 손잡이 위치")]
+    [SerializeField] private Vector2 soundToggleOffPosition = new Vector2(-45f, 0f);
+    [Tooltip("효과음 ON일 때 토글 배경 색")]
+    [SerializeField] private Color soundToggleOnColor = new Color(0.12f, 0.88f, 0.32f, 1f);
+    [Tooltip("효과음 OFF일 때 토글 배경 색")]
+    [SerializeField] private Color soundToggleOffColor = new Color(0.86f, 0.86f, 0.86f, 1f);
+    [Tooltip("효과음 ON일 때 토글 손잡이 색")]
+    [SerializeField] private Color soundToggleKnobOnColor = new Color(0.86f, 0.86f, 0.86f, 1f);
+    [Tooltip("효과음 OFF일 때 토글 손잡이 색")]
+    [SerializeField] private Color soundToggleKnobOffColor = new Color(0.16f, 0.06f, 0.30f, 1f);
 
     [Header("Animation Settings (팝업 연출 설정)")]
     [Tooltip("스케일 애니메이션이 적용될 팝업의 실제 부모 창")]
@@ -50,10 +73,10 @@ public class SettingsPopup : MonoBehaviour
         {
             soundButton.onClick.AddListener(OnClickSound);
         }
-        // if (musicButton != null)
-        // {
-        //     musicButton.onClick.AddListener(OnClickMusic);
-        // }
+        if (rankingButton != null)
+        {
+            rankingButton.onClick.AddListener(OnClickRanking);
+        }
         if (retryButton != null)
         {
             retryButton.onClick.AddListener(OnClickRetry);
@@ -75,6 +98,7 @@ public class SettingsPopup : MonoBehaviour
     private void OnDestroy()
     {
         if (soundButton != null) soundButton.onClick.RemoveListener(OnClickSound);
+        if (rankingButton != null) rankingButton.onClick.RemoveListener(OnClickRanking);
         if (retryButton != null) retryButton.onClick.RemoveListener(OnClickRetry);
         if (mainButton != null) mainButton.onClick.RemoveListener(OnClickMain);
         if (closeButton != null) closeButton.onClick.RemoveListener(OnClickClose);
@@ -156,18 +180,10 @@ public class SettingsPopup : MonoBehaviour
         UpdateUI();
     }
 
-    // public void OnClickMusic()
-    // {
-    //     isMusicOn = !isMusicOn;
-
-    //     if (SoundManager.Instance != null)
-    //     {
-    //         SoundManager.Instance.SetMusicMute(!isMusicOn);
-    //     }
-        
-    //     SaveSettings();
-    //     UpdateUI();
-    // }
+    public void OnClickRanking()
+    {
+        rankingPopup?.OpenPopup();
+    }
 
     public void OnClickRetry()
     {
@@ -193,9 +209,29 @@ public class SettingsPopup : MonoBehaviour
 
     private void UpdateUI()
     {
-        if (soundIconImage != null)
+        if (soundIconImage != null && soundOnSprite != null && soundOffSprite != null)
         {
             soundIconImage.sprite = isSoundOn ? soundOnSprite : soundOffSprite;
+        }
+
+        UpdateSoundToggleSwitch();
+    }
+
+    private void UpdateSoundToggleSwitch()
+    {
+        if (soundToggleBackgroundImage != null)
+        {
+            soundToggleBackgroundImage.color = isSoundOn ? soundToggleOnColor : soundToggleOffColor;
+        }
+
+        if (soundToggleKnobImage != null)
+        {
+            soundToggleKnobImage.color = isSoundOn ? soundToggleKnobOnColor : soundToggleKnobOffColor;
+        }
+
+        if (soundToggleKnob != null)
+        {
+            soundToggleKnob.anchoredPosition = isSoundOn ? soundToggleOnPosition : soundToggleOffPosition;
         }
     }
 
