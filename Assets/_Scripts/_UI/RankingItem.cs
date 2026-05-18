@@ -1,14 +1,15 @@
-using UnityEngine;
 using TMPro;
-using UnityEngine.UI;
+using UnityEngine;
 
 /// <summary>
-/// 랭킹 UI에서 한 명의 기록을 표시하는 아이템 스크립트.
-/// 등수, 닉네임, 점수를 출력하며, 1~3등의 경우 숫자 대신 메달 이미지를 표시.
+/// 랭킹 UI에서 한 명의 기록을 표시합니다.
+/// 1~3등은 등수 색상만 강조하고, 4등 이하는 기본 색으로 표시합니다.
 /// </summary>
 public class RankingItem : MonoBehaviour
 {
-    [Header("UI Components (텍스트 연결)")]
+    private const int MaxNicknameLength = 10;
+
+    [Header("UI Components")]
     [Tooltip("등수를 표시할 텍스트")]
     public TextMeshProUGUI rankText;
     [Tooltip("닉네임을 표시할 텍스트")]
@@ -16,47 +17,94 @@ public class RankingItem : MonoBehaviour
     [Tooltip("점수를 표시할 텍스트")]
     public TextMeshProUGUI scoreText;
 
-    [Header("Medal Settings (메달 이미지 설정)")]
-    [Tooltip("1~3등일 때 등수 텍스트 대신 활성화될 메달 Image 컴포넌트")]
-    public Image medalImage;
-    [Tooltip("1등 메달 스프라이트")]
-    public Sprite goldMedal;
-    [Tooltip("2등 메달 스프라이트")]
-    public Sprite silverMedal;
-    [Tooltip("3등 메달 스프라이트")]
-    public Sprite bronzeMedal;
-
-    /// <summary>
-    /// 서버나 로컬에서 받아온 랭킹 데이터를 UI에 세팅.
-    /// </summary>
-    /// <param name="rank">등수</param>
-    /// <param name="name">닉네임</param>
-    /// <param name="score">점수</param>
     public void SetData(int rank, string name, int score)
     {
-        if (nameText != null) nameText.text = name;
-        if (scoreText != null) scoreText.text = score.ToString("N0");
-
-        // 1~3등 여부 판별
+        Color rowColor = RankingUiTheme.GetRankTextColor(rank);
         bool isTop3 = rank >= 1 && rank <= 3;
+        string displayName = TruncateNickname(name);
 
-        // 1~3등: 텍스트 숨기고 메달 이미지 활성화
-        if (rankText != null) rankText.gameObject.SetActive(!isTop3);
-        if (medalImage != null) medalImage.gameObject.SetActive(isTop3);
+        if (nameText != null)
+        {
+            nameText.text = displayName;
+            nameText.color = rowColor;
+            ApplyNameTextStyle(nameText, isTop3);
+            DisableRaycast(nameText);
+        }
 
-        if (isTop3)
+        if (scoreText != null)
         {
-            if (medalImage != null)
-            {
-                medalImage.sprite = rank == 1 ? goldMedal : (rank == 2 ? silverMedal : bronzeMedal);
-            }
+            scoreText.color = rowColor;
+            scoreText.fontStyle = isTop3 ? FontStyles.Bold : FontStyles.Normal;
+            DisableRaycast(scoreText);
+
+            RankingScorePressable scorePressable = GetOrAddRowScorePressable();
+            scorePressable.Bind(scoreText);
+            scorePressable.SetScore(score);
         }
-        else
+
+        if (rankText != null)
         {
-            if (rankText != null)
-            {
-                rankText.text = rank.ToString();
-            }
+            rankText.gameObject.SetActive(true);
+            rankText.text = rank.ToString();
+            rankText.color = rowColor;
+            ApplyRowTextStyle(rankText, isTop3);
+            DisableRaycast(rankText);
         }
+    }
+
+    private RankingScorePressable GetOrAddRowScorePressable()
+    {
+        RankingScorePressable pressable = GetComponent<RankingScorePressable>();
+        if (pressable == null)
+        {
+            pressable = gameObject.AddComponent<RankingScorePressable>();
+        }
+
+        RemoveStalePressableOnScoreText(pressable);
+        return pressable;
+    }
+
+    private void RemoveStalePressableOnScoreText(RankingScorePressable rowPressable)
+    {
+        if (scoreText == null)
+        {
+            return;
+        }
+
+        RankingScorePressable onScoreText = scoreText.GetComponent<RankingScorePressable>();
+        if (onScoreText != null && onScoreText != rowPressable)
+        {
+            Destroy(onScoreText);
+        }
+    }
+
+    private static string TruncateNickname(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return string.Empty;
+        }
+
+        return name.Length <= MaxNicknameLength ? name : name.Substring(0, MaxNicknameLength);
+    }
+
+    private static void ApplyRowTextStyle(TextMeshProUGUI text, bool isTop3)
+    {
+        text.fontStyle = isTop3 ? FontStyles.Bold : FontStyles.Normal;
+        text.textWrappingMode = TextWrappingModes.NoWrap;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+    }
+
+    private static void ApplyNameTextStyle(TextMeshProUGUI text, bool isTop3)
+    {
+        text.fontStyle = isTop3 ? FontStyles.Bold : FontStyles.Normal;
+        text.textWrappingMode = TextWrappingModes.NoWrap;
+        text.overflowMode = TextOverflowModes.Overflow;
+        text.horizontalAlignment = HorizontalAlignmentOptions.Center;
+    }
+
+    private static void DisableRaycast(TextMeshProUGUI text)
+    {
+        text.raycastTarget = false;
     }
 }
