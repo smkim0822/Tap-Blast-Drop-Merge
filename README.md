@@ -2,8 +2,9 @@
 
 > **"직관적인 조작과 예측 불가능한 물리 반응이 결합된 모바일 하이퍼캐주얼 낙하형 퍼즐 게임"**
 
-![Project Status](https://img.shields.io/badge/Status-Developing-yellow?style=flat-square) 
-![Unity](https://img.shields.io/badge/Unity-6_(6000.0.38f1)-black?style=flat-square&logo=unity)
+![Project Status](https://img.shields.io/badge/Status-Release_v1.0.0-brightgreen?style=flat-square)
+![Unity](https://img.shields.io/badge/Unity-6_(6000.3.8f1)-black?style=flat-square&logo=unity)
+![Platform](https://img.shields.io/badge/Platform-Android-green?style=flat-square)
 
 ## 🎮 프로젝트 소개
 **Tap Blast: Drop & Merge**는 물리 엔진을 기반으로 한 낙하형 병합 퍼즐 게임입니다. 
@@ -57,6 +58,27 @@
 - **메뉴**: `Dev/Migrate Refactor References (Active Scene)`
 - **역할**: 활성 씬에서 `GameManager/ScoreManager/Spawner/RankingPopup` 등 레퍼런스를 새 컴포넌트(`GameUIRoots`, `ScoreHudView`, `SpawnerVisuals`, `RankingBoardView`)로 복사
 
+## 📱 Android 빌드 (Release)
+
+1. Unity **6000.3.8f1**, Android Build Support 모듈 설치
+2. `Assets/Resources/ServerConfig.asset.example`을 복사해 `ServerConfig.asset` 생성 후 운영 URL·키 입력 (저장소에는 example만 포함)
+3. 메뉴 **`Dev/Build/Android APK (Release)`** → `Builds/Android/TapBlast-DropMerge.apk`
+4. 패키지명: `com.tapblast.dropmerge` · 버전: **1.0.0**
+
+## 🎤 발표·데모 시나리오 (3~5분)
+
+1. **소개** — Tap Blast: Drop & Merge, 낙하형 물리 퍼즐 + 글로벌 랭킹
+2. **핵심 플레이** — 발사대 이동, 폭탄 낙하, 같은 색 공 충돌·연쇄 폭발
+3. **UX 강조** — 게임오버 후 **씬 로딩 없이** 즉시 재시작
+4. **랭킹** — 팝업, 닉네임(한글 IME), 오프라인 → 온라인 동기화 (가능 시)
+5. **마무리** — 아키텍처 한 줄: `GameSessionFlow` / `RankingSyncFlow` 분리로 유지보수성
+
+## ⚠️ 알려진 제한
+
+- 랭킹 팝업 **로딩 UI** 오브젝트 미연결 (`loadingMessageObject`) — 동작은 하며 문구만 미표시
+- `ServerConfig.asset`은 `.gitignore` 대상 — 클론 후 example 복사 필요
+- 연쇄 폭발 시 동시 물리 오브젝트 증가로 저사양 기기에서 프레임 변동 가능
+
 ## 🔀 개발 워크플로
 
 이슈 → 브랜치 → PR 순서와 커밋·템플릿 규칙은 **[docs/WORKFLOW.md](docs/WORKFLOW.md)** 를 참고합니다.
@@ -65,6 +87,7 @@
 * [[랭킹 서버 레포지토리 (RankingServer)]](https://github.com/romantic02/RankingServer)
 
 ## 📅 개발 히스토리 (Change Log)
+* **v1.0.0:** 캡스톤 마무리 — UI 디자인 전면 반영(메인·인게임·랭킹·설정·결과), Android Release 빌드·앱 아이콘, QA 씬 레퍼런스·orientation 수정, `ServerConfig` example·gitignore 정리
 * **v0.9.0:** 공식 타이틀 **Tap Blast: Drop & Merge** 확정, GitHub 저장소명 정리
 * **v0.8.4:** 결합도 높은 매니저/로직 리팩토링(세션 플로우 분리, 점수 단일 소스, 랭킹 동기화/뷰 분리, 풀 안정화), 운영 서버 Base URL/포트 처리 보강
 * **v0.8.3:** 닉네임 한글 입력(IME) 시스템 구축, 정적 폰트 아틀라스 렌더링 최적화 (OOM 및 Tofu 현상 방지)
