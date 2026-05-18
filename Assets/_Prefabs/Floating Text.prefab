@@ -109,7 +109,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: Floating Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 961f52d6f02142d47b0e5f61a89a01b0, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 102e751c7e518f14c896cbcb5a2abb2a, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: 79459efec17a4d00a321bdcc27bbc385, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}

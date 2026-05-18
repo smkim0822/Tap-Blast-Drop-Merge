@@ -14,121 +14,182 @@ public class Spawner : MonoBehaviour
         public Color color;
     }
 
-    [Header("Settings")]
+    [Header("Settings (기본 설정)")]
     [Tooltip("생성할 폭탄 프리팹")]
     public GameObject bombPrefab;
-
-    [Tooltip("화면 좌우 이동 제한 범위 (X축)")]
-    public float xLimit = 2.0f; // [수정됨] 1.6 -> 2.0로 확장 (벽 위치 고려)
 
     [Tooltip("재장전 시간")]
     public float cooldownTime = 0.5f;
 
-    [Header("Elements")]
+    [Tooltip("스포너에서 생성되는 폭탄의 스케일 배율(플레이 영역에 맞게 조정)")]
+    [Range(0.5f, 1.2f)]
+    public float bombScaleMultiplier = 0.85f;
+
+    [Header("Play area (X축 제한)")]
+    [Tooltip("플레이 영역 좌측 벽의 Collider2D (비어 있으면 이름 \"Left Wall\"으로 찾음)")]
+    [SerializeField] private Collider2D leftWall;
+
+    [Tooltip("플레이 영역 우측 벽의 Collider2D (비어 있으면 이름 \"Right Wall\"으로 찾음)")]
+    [SerializeField] private Collider2D rightWall;
+
+    [Tooltip("좌우 벽을 찾지 못했을 때만 사용하는 X 반경 (절대값, -xLimit ~ xLimit)")]
+    public float xLimit = 2.0f;
+
+    [Header("Elements (폭탄 데이터)")]
     public ElementData[] elements;
 
-    [Header("UI References")]
-    [Tooltip("다음 폭탄 색상 UI 이미지")]
-    public Image[] nextBombUIs;
-    
-    [Header("Guide Line")]
-    [Tooltip("라인 렌더러 컴포넌트 연결")]
-    public LineRenderer guideLine;
-
-    [Tooltip("표시선이 바닥에 닿을 바닥의 Y좌표")]
-    public float groundY = -4.5f;
-
-    [Tooltip("점선 간격 조절")]
-    public float lineTextureScale = 1;
-
-    [Header("Animation Settings (Falling Bomb)")]
-    public AnimationCurve spawnCurve;
-    public float spawnDuration = 0.3f;
-
-    [Header("Animation Settings (Spawner Reload)")]
-    public AnimationCurve spawnerLoadCurve;
-    public float spawnerLoadDuration = 0.3f;
-
-    [Header("Animation Settings (UI)")]
-    public AnimationCurve uiPunchCurve;
-    public float uiAnimDuration = 0.2f;
-
+    // 내부 상태 변수
     private Camera mainCam;
     private bool isDragging = false;
     private bool isReloading = false;
 
-    private SpriteRenderer spawnerRenderer;
-    private ElementData currentElement;
-    private List<ElementData> nextElements = new List<ElementData>();
-    private Vector3 originalScale;
+    // 컴포넌트 및 캐싱 변수
+    private SpawnerQueue queue;
+    private SpawnerVisuals visuals;
 
     void Awake()
     {
-        originalScale = transform.localScale;
-        if (originalScale == Vector3.zero)
+        mainCam = Camera.main;
+        visuals = GetComponent<SpawnerVisuals>();
+        if (visuals == null)
         {
-            originalScale = Vector3.one;
+            visuals = gameObject.AddComponent<SpawnerVisuals>();
         }
+        queue = new SpawnerQueue(elements, visuals.PreviewCount);
+
+        ResolveWallColliders();
+    }
+
+    /// <summary>
+    /// 인스펙터에 벽이 없으면 씬의 Left Wall / Right Wall에서 Collider2D를 찾습니다.
+    /// </summary>
+    void ResolveWallColliders()
+    {
+        if (leftWall == null)
+        {
+            GameObject go = GameObject.Find("Left Wall");
+            if (go != null) go.TryGetComponent(out leftWall);
+        }
+        if (rightWall == null)
+        {
+            GameObject go = GameObject.Find("Right Wall");
+            if (go != null) go.TryGetComponent(out rightWall);
+        }
+    }
+
+    /// <summary>
+    /// 스포너 중심이 머물 수 있는 월드 X 구간 [minX, maxX].
+    /// 좌우 벽 안쪽 면에서 다시 폭탄 반경만큼 안쪽으로 들여, 폭탄 끝이 벽에 닿도록 한다.
+    /// </summary>
+    void GetHorizontalClampBounds(out float minX, out float maxX)
+    {
+        float outerMin, outerMax;
+        if (leftWall != null && rightWall != null)
+        {
+            float innerLeft = leftWall.bounds.max.x;
+            float innerRight = rightWall.bounds.min.x;
+            outerMin = Mathf.Min(innerLeft, innerRight);
+            outerMax = Mathf.Max(innerLeft, innerRight);
+        }
+        else
+        {
+            outerMin = -xLimit;
+            outerMax = xLimit;
+        }
+
+        float pad = GetBombHalfWidth();
+        minX = outerMin + pad;
+        maxX = outerMax - pad;
+
+        // 폭탄이 영역보다 큰 비정상 케이스: 중앙으로 고정
+        if (minX > maxX)
+        {
+            float mid = (outerMin + outerMax) * 0.5f;
+            minX = maxX = mid;
+        }
+    }
+
+    /// <summary>
+    /// 스폰될 폭탄의 월드 기준 가로 반경.
+    /// CircleCollider2D가 있으면 그 반경을, 없으면 다른 Collider2D의 X extents를 사용한다.
+    /// </summary>
+    float GetBombHalfWidth()
+    {
+        if (bombPrefab == null) return 0f;
+
+        float localHalfWidth = 0f;
+        if (bombPrefab.TryGetComponent(out CircleCollider2D circle))
+        {
+            localHalfWidth = circle.radius;
+        }
+        else if (bombPrefab.TryGetComponent(out Collider2D anyCol))
+        {
+            localHalfWidth = anyCol.bounds.extents.x;
+        }
+
+        Vector3 prefabScale = bombPrefab.transform.localScale;
+        return localHalfWidth * Mathf.Abs(prefabScale.x) * Mathf.Abs(bombScaleMultiplier);
     }
 
     void Start()
     {
-        mainCam = Camera.main;
-        spawnerRenderer = GetComponent<SpriteRenderer>();
-
-        // 라인 렌더러 초기화
-        if (guideLine == null)
-        {
-            guideLine = GetComponent<LineRenderer>();
-        }
-        guideLine.positionCount = 2;
-        guideLine.enabled = false;
-
-        guideLine.textureMode = LineTextureMode.Tile;
-
-        // 표시선이 테두리 위로 보이는 문제 방지
-        guideLine.sortingOrder = -10;
-
-        // 게임 시작 시 초기화
-        InitializeQueue();
-        PrepareNextBomb();
+        queue.Reset();
+        visuals.RenderQueue(queue.CurrentElement, queue.NextElements, false);
     }
 
     void Update()
     {
-        if (Time.timeScale == 0) return;
-
-        if (IsPointerOverUI()) return;
-
-        if (isReloading) return;
+        if (Time.timeScale == 0f || isReloading || IsPointerOverUI())
+        {
+            return;
+        }
 
         HandleInput();
 
         // 드래그 중일 때만 표시선 표시
-        if (isDragging) DrawGuideLine();
-        else guideLine.enabled = false;
+        if (isDragging) 
+        {
+            visuals.DrawGuideLine(transform.position, queue.CurrentElement.color);
+        }
+        else if (visuals.IsGuideEnabled())
+        {
+            visuals.SetGuideEnabled(false);
+        }
     }
 
-    // 입력이 UI 위인지 판별하는 함수
+    /// <summary>
+    /// 현재 터치 이벤트가 UI 요소 위에서 발생했는지 판별
+    /// </summary>
+    /// <returns></returns>
     private bool IsPointerOverUI()
     {
-        if (EventSystem.current.IsPointerOverGameObject()) return true;
+        if (EventSystem.current == null) return false;
 
+        // 클릭
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            return true;
+        }
+
+        // 터치
         if (Input.touchCount > 0)
         {
-            if (EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId)) return true;
+            return EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId);
         }
 
         return false;
     }
 
+    /// <summary>
+    /// 사용자 입력 처리
+    /// </summary>
     void HandleInput()
     {
         // 터치 시작
         if (Input.GetMouseButtonDown(0))
         {
             isDragging = true;
-            guideLine.enabled = true;
+            visuals.SetGuideEnabled(true);
         }
 
         // 드래그 중
@@ -141,255 +202,77 @@ public class Spawner : MonoBehaviour
         if (Input.GetMouseButtonUp(0) && isDragging)
         {
             isDragging = false;
-            guideLine.enabled = false;
+            visuals.SetGuideEnabled(false);
             StartCoroutine(DropBombRoutine());
         }
     }
 
-    void MoveSpawner()
+    /// <summary>
+    /// 스포너의 위치를 마우스 좌표에 맞춰 X축으로만 이동
+    /// </summary>
+    private void MoveSpawner()
     {
         // 마우스 화면 좌표 -> 월드 좌표로 변환
         Vector3 mousePos = mainCam.ScreenToWorldPoint(Input.mousePosition);
 
-        // X축 이동 제한 (Clamp)
-        float clampedX = Mathf.Clamp(mousePos.x, -xLimit, xLimit);
+        GetHorizontalClampBounds(out float minX, out float maxX);
+        float clampedX = Mathf.Clamp(mousePos.x, minX, maxX);
 
         // 이동
-        transform.position = new Vector2(clampedX, transform.position.y);
+        transform.position = new Vector3(clampedX, transform.position.y, transform.position.z);
     }
 
-    void DrawGuideLine()
-    {
-        // 시작점: 스포너의 현재 위치
-        guideLine.SetPosition(0, transform.position);
-
-        // 끝점: X는 스포너와 같고, Y는 바닥까지
-        Vector3 endPos = new Vector3(transform.position.x, groundY, 0);
-        guideLine.SetPosition(1, endPos);
-
-        float distance = Vector3.Distance(transform.position, endPos);
-        guideLine.material.mainTextureScale = new Vector2(distance * lineTextureScale, 1);
-
-        Color guideColor = currentElement.color;
-        guideLine.startColor = guideColor;
-        guideColor.a = 0.3f;
-        guideLine.endColor = guideColor;
-    }
-
-    IEnumerator DropBombRoutine()
+    /// <summary>
+    /// 폭탄을 투하하고 재장전 대기 시간을 갖는 코루틴
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator DropBombRoutine()
     {
         // 폭탄 생성
         if (bombPrefab != null)
         {
-            GameObject newBomb = Instantiate(bombPrefab, transform.position, Quaternion.identity);
+            GameObject newBomb = PoolService.Spawn(bombPrefab, transform.position, Quaternion.identity);
+            // 풀링 오브젝트는 이전 스케일이 남을 수 있으므로, 프리팹 기준 스케일로 재설정 후 배율 적용
+            Vector3 baseScale = bombPrefab.transform.localScale;
+            newBomb.transform.localScale = new Vector3(baseScale.x * bombScaleMultiplier, baseScale.y * bombScaleMultiplier, baseScale.z);
+            visuals.PlaySpawnAnimation(newBomb.transform);
 
-            Vector3 realScale = newBomb.transform.localScale;
-
-            newBomb.transform.localScale = Vector3.zero;
-
-            StartCoroutine(AnimateSpawn(newBomb.transform, realScale));
-
-            BombLogic bombLogic = newBomb.GetComponent<BombLogic>();
-            
-            if (bombLogic != null)
+            if (newBomb.TryGetComponent(out BombLogic bombLogic))
             {
-                bombLogic.Initialize(currentElement.sprite, currentElement.color);
+                bombLogic.Initialize(queue.CurrentElement.sprite, queue.CurrentElement.color);
             }
         }
 
         // 재장전 시작
         isReloading = true;
-        spawnerRenderer.enabled = false;
+        visuals.SetSpawnerVisible(false);
 
         // 장전 대기시간
         yield return new WaitForSeconds(cooldownTime);
 
         // 재장전 완료
-        PrepareNextBomb();
-
-        spawnerRenderer.enabled = true;
+        queue.Advance();
+        visuals.RenderQueue(queue.CurrentElement, queue.NextElements, true);
+        visuals.SetSpawnerVisible(true);
         isReloading = false;
     }
 
-    // 대기열 3개 채우기
-    void InitializeQueue()
-    {
-        nextElements.Clear();
-        for (int i = 0; i < nextBombUIs.Length; i++)
-        {
-            nextElements.Add(PickRandomElement());
-        }
-    }
-
-    // 다음 폭탄을 현재 폭탄으로 가져오고, 새로운 다음 폭탄을 뽑는 함수
-    void PrepareNextBomb()
-    {
-        if (nextElements.Count == 0)
-        {
-            InitializeQueue();
-        }
-
-        int lastIndex = nextElements.Count - 1;
-        currentElement = nextElements[lastIndex];
-
-        nextElements.RemoveAt(lastIndex);
-
-        nextElements.Insert(0, PickRandomElement());
-
-        // 시각적 업데이트
-        UpdateVisuals();
-    }
-
-    ElementData PickRandomElement()
-    {
-        if (elements.Length > 0)
-        {
-            int randomIndex = Random.Range(0, elements.Length);
-            return elements[randomIndex];
-        }
-        return new ElementData();
-    }
-
-    void UpdateVisuals()
-    {
-        // 스포너 이미지 변경
-        if (spawnerRenderer != null)
-        {
-            spawnerRenderer.sprite = currentElement.sprite;
-            spawnerRenderer.color = Color.white;
-
-            StartCoroutine(AnimateSpawnerReload());
-        }
-
-        // UI 업데이트
-        for (int i = 0; i < nextBombUIs.Length; i++)
-        {
-            if (i < nextElements.Count)
-            {
-                nextBombUIs[i].sprite = nextElements[i].sprite;
-
-                Color uiColor = Color.white;
-
-                bool isNextBomb = (i == nextElements.Count - 1);
-                float targetScale = 0.8f;
-
-                if (isNextBomb)
-                {
-                    uiColor.a = 1.0f;
-                    targetScale = 1.2f;
-                }
-                else
-                {
-                    uiColor.a = 0.5f;
-                }
-                
-                nextBombUIs[i].color = uiColor;
-
-                StartCoroutine(AnimateUI(nextBombUIs[i].rectTransform, targetScale));
-            }
-        }
-    }
-
-    // 초기화
+    /// <summary>
+    /// 스포너 상태 강제 초기화
+    /// </summary>
     public void ResetSpawner()
     {
         StopAllCoroutines();
 
         isDragging = false;
         isReloading = false;
-        if (spawnerRenderer == null)
-        {
-            spawnerRenderer = GetComponent<SpriteRenderer>();
-        }
-        spawnerRenderer.enabled = true;
-        if (guideLine != null)
-        {
-            guideLine.enabled = false;
-        }
 
-        transform.position = new Vector3(0, transform.position.y, 0);
-        transform.localScale = originalScale;
+        GetHorizontalClampBounds(out float minX, out float maxX);
+        float resetX = Mathf.Clamp(0f, minX, maxX);
+        transform.position = new Vector3(resetX, transform.position.y, transform.position.z);
 
-        nextElements.Clear();
-        InitializeQueue();
-
-        int lastIndex = nextElements.Count - 1;
-        currentElement = nextElements[lastIndex];
-        nextElements.RemoveAt(lastIndex);
-        nextElements.Insert(0, PickRandomElement());
-
-        ForceUpdateVisuals();
-    }
-
-    private void ForceUpdateVisuals()
-    {
-        if (spawnerRenderer == null) spawnerRenderer = GetComponent<SpriteRenderer>();
-        
-        if (spawnerRenderer != null)
-        {
-            spawnerRenderer.sprite = currentElement.sprite;
-            spawnerRenderer.color = Color.white;
-            spawnerRenderer.enabled = true;
-        }
-
-        transform.localScale = originalScale;
-
-        for (int i = 0; i < nextBombUIs.Length; i++)
-        {
-            if (i < nextElements.Count)
-            {
-                nextBombUIs[i].sprite = nextElements[i].sprite;
-                bool isNextBomb = (i == nextElements.Count - 1);
-                Color uiColor = Color.white;
-                uiColor.a = isNextBomb ? 1.0f : 0.5f;
-                nextBombUIs[i].color = uiColor;
-                nextBombUIs[i].rectTransform.localScale = Vector3.one * (isNextBomb ? 1.2f : 0.8f);
-            }
-        }
-    }
-
-    IEnumerator AnimateSpawn(Transform target, Vector3 targetScale)
-    {
-        float timer = 0f;
-        while (timer < spawnDuration)
-        {
-            timer += Time.deltaTime;
-            float progress = timer / spawnDuration;
-            float curveValue = spawnCurve.Evaluate(progress);
-            if (target != null) target.localScale = targetScale * curveValue;
-            yield return null;
-        }
-        if (target != null) target.localScale = targetScale;
-    }
-
-    IEnumerator AnimateSpawnerReload()
-    {
-        float timer = 0f;
-        Vector3 targetScale = originalScale;
-        transform.localScale = Vector3.zero;
-        while (timer < spawnerLoadDuration)
-        {
-            timer += Time.deltaTime;
-            float progress = timer / spawnerLoadDuration;
-            float curveValue = spawnerLoadCurve.Evaluate(progress);
-            transform.localScale = targetScale * curveValue;
-            yield return null;
-        }
-        transform.localScale = targetScale;
-    }
-
-    IEnumerator AnimateUI(RectTransform target, float baseScale)
-    {
-        float timer = 0f;
-        Vector3 baseScaleVec = Vector3.one * baseScale;
-        while (timer < uiAnimDuration)
-        {
-            timer += Time.deltaTime;
-            float progress = timer / uiAnimDuration;
-            float curveValue = uiPunchCurve.Evaluate(progress);
-            if (target != null) target.localScale = baseScaleVec * curveValue;
-            yield return null;
-        }
-        if (target != null) target.localScale = baseScaleVec;
+        visuals.ResetVisualState();
+        queue.Reset();
+        visuals.RenderQueue(queue.CurrentElement, queue.NextElements, false);
     }
 }

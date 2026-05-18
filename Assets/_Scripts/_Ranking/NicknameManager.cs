@@ -1,14 +1,12 @@
 using UnityEngine;
+using System;
 
 public class NicknameManager : MonoBehaviour
 {
     public static NicknameManager Instance;
 
-    private const string PREFS_KEY = "PlayerName";
-
     private void Awake()
     {
-        // 싱글톤 패턴 적용
         if (Instance == null)
         {
             Instance = this;
@@ -20,54 +18,51 @@ public class NicknameManager : MonoBehaviour
         }
     }
 
-    // [핵심 로직] 닉네임 초기화 및 자동 생성
+    /// <summary>
+    /// 게임 최초 실행 시 닉네임이 없다면 임의의 Guest 닉네임 생성.
+    /// Awake 단계에서 자동 호출.
+    /// </summary>
     private void InitializeNickname()
     {
         // 1. 저장된 닉네임이 있는지 확인 (기본값은 빈 문자열)
-        string currentName = PlayerPrefs.GetString(PREFS_KEY, "");
+        string currentName = NicknameStore.Load("");
 
         // 2. 닉네임이 비어있다면 (최초 실행) -> Guest_XXXX 생성
         if (string.IsNullOrEmpty(currentName))
         {
-            int randomNum = Random.Range(1000, 10000); // 1000 ~ 9999
+            int randomNum = UnityEngine.Random.Range(1000, 10000); // 1000 ~ 9999
             string newGuestName = $"Guest_{randomNum}";
             
             SetNickname(newGuestName);
             Debug.Log($"🆕 신규 유저 감지! 닉네임 자동 생성: {newGuestName}");
         }
-        else
-        {
-            Debug.Log($"✅ 기존 유저 접속: {currentName}");
-        }
     }
 
-    // [기능] 닉네임 변경 및 저장
-    public void SetNickname(string newName)
+    /// <summary>
+    /// 새로운 닉네임을 검증하고 로컬 기기에 저장.
+    /// </summary>
+    /// <param name="newName">변경을 시도할 새 닉네임</param>
+    /// <returns>저장 성공 여부 (true: 성공, false: 유효성 검사 실패)</returns>
+    public bool SetNickname(string newName)
     {
-        // 1. 빈 값 또는 공백 체크
-        if (string.IsNullOrWhiteSpace(newName))
+        if (!NicknameValidator.IsValid(newName))
         {
-            Debug.LogWarning("⚠️ 닉네임은 비어있을 수 없습니다.");
-            return;
+            Debug.LogWarning($"⚠️ 닉네임은 비어있을 수 없으며 {NicknameValidator.MaxLength}자를 초과할 수 없습니다.");
+            return false;
         }
 
-        // 2. 글자 수 제한 체크 (10자) - 초기 기획 반영
-        if (newName.Length > 10)
-        {
-            Debug.LogWarning("⚠️ 닉네임은 10자를 초과할 수 없습니다.");
-            // UI에 경고 팝업을 띄우는 로직을 추가할 수도 있습니다.
-            return;
-        }
+        // 저장
+        NicknameStore.Save(newName);
 
-        // 3. 저장
-        PlayerPrefs.SetString(PREFS_KEY, newName);
-        PlayerPrefs.Save(); 
-        Debug.Log($"💾 닉네임 저장 완료: {newName}");
+        return true;
     }
 
-    // [기능] 현재 닉네임 가져오기
+    /// <summary>
+    /// 현재 기기에 저장된 플레이어의 닉네임을 불러옴.
+    /// </summary>
+    /// <returns>저장된 닉네임 (가져오기 실패 시 "Guest_Error" 반환)</returns>
     public string GetNickname()
     {
-        return PlayerPrefs.GetString(PREFS_KEY, "Guest_Error");
+        return NicknameStore.Load("Guest_Error");
     }
 }
