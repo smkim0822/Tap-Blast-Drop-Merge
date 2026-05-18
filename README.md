@@ -1,4 +1,4 @@
-# 💧 Project Drop (가제)
+# Tap Blast: Drop & Merge
 
 > **"직관적인 조작과 예측 불가능한 물리 반응이 결합된 모바일 하이퍼캐주얼 낙하형 퍼즐 게임"**
 
@@ -6,7 +6,7 @@
 ![Unity](https://img.shields.io/badge/Unity-6_(6000.0.38f1)-black?style=flat-square&logo=unity)
 
 ## 🎮 프로젝트 소개
-**Project Drop**은 물리 엔진을 기반으로 한 낙하형 병합 퍼즐 게임입니다. 
+**Tap Blast: Drop & Merge**는 물리 엔진을 기반으로 한 낙하형 병합 퍼즐 게임입니다. 
 플레이어는 최적의 타이밍과 위치에 폭탄을 투하하여 연쇄 분열과 병합을 유도하고, 최고 점수를 달성해 글로벌 유저들과 경쟁합니다. 
 복잡한 튜토리얼 없이 누구나 쉽게 시작할 수 있으면서도, 다이나믹한 물리 충돌이 만들어내는 예측 불가능한 상황들로 몰입감을 제공합니다.
 
@@ -65,6 +65,7 @@
 * [[랭킹 서버 레포지토리 (RankingServer)]](https://github.com/romantic02/RankingServer)
 
 ## 📅 개발 히스토리 (Change Log)
+* **v0.9.0:** 공식 타이틀 **Tap Blast: Drop & Merge** 확정, GitHub 저장소명 정리
 * **v0.8.4:** 결합도 높은 매니저/로직 리팩토링(세션 플로우 분리, 점수 단일 소스, 랭킹 동기화/뷰 분리, 풀 안정화), 운영 서버 Base URL/포트 처리 보강
 * **v0.8.3:** 닉네임 한글 입력(IME) 시스템 구축, 정적 폰트 아틀라스 렌더링 최적화 (OOM 및 Tofu 현상 방지)
 * **v0.8.2:** 에뮬레이터 및 실기기 환경 오프라인 UI 동기화 결함 수정, 비동기 레이스 컨디션(Race Condition) 최적화

@@ -2,8 +2,8 @@
 using UnityEditor;
 
 /// <summary>
-/// Unity가 프로젝트 폴더명 등으로 productName을 되돌리는 경우가 있어,
-/// 예전/기본값일 때만 공식 타이틀로 맞춥니다.
+/// Unity가 프로젝트 폴더명(구 Project-Drop) 등으로 productName을 되돌리는 경우가 있어,
+/// 예전 가제/기본값일 때만 공식 타이틀로 맞춥니다.
 /// </summary>
 [InitializeOnLoad]
 static class ProductNameEditorGuard
