@@ -20,8 +20,6 @@ public class GameOverPanel : MonoBehaviour
     [Header("Buttons (버튼 요소)")]
     [Tooltip("게임을 다시 시작하는 버튼")]
     public Button retryButton;
-    [Tooltip("랭킹 창을 여는 버튼")]
-    public Button rankingButton;
     [Tooltip("재시작 버튼의 투명도를 자연스럽게 조절하기 위한 캔버스 그룹")]
     public CanvasGroup retryButtonCanvasGroup;
 
@@ -33,44 +31,13 @@ public class GameOverPanel : MonoBehaviour
     [Tooltip("버튼이 나타날 때의 연출 그래프")]
     public AnimationCurve appearanceCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
-    [Header("Popups (팝업 연결)")]
-    [Tooltip("랭킹 버튼을 눌렀을 때 띄워줄 랭킹 팝업 객체")]
-    public RankingPopup rankingPopup;
-
     private Coroutine retryEnableCoroutine;
-
-    void Awake()
-    {
-        ResolveRankingButton();
-    }
 
     void Start()
     {
         if (retryButton != null)
         {
             retryButton.onClick.AddListener(OnRetryClicked);
-        }
-        if (rankingButton != null)
-        {
-            rankingButton.onClick.AddListener(OnClickRankingButton);
-        }
-    }
-
-    void ResolveRankingButton()
-    {
-        if (rankingButton != null)
-        {
-            return;
-        }
-
-        Button[] buttons = GetComponentsInChildren<Button>(true);
-        for (int i = 0; i < buttons.Length; i++)
-        {
-            if (buttons[i].gameObject.name == "RankingButton")
-            {
-                rankingButton = buttons[i];
-                return;
-            }
         }
     }
 
@@ -79,10 +46,6 @@ public class GameOverPanel : MonoBehaviour
         if (retryButton != null)
         {
             retryButton.onClick.RemoveListener(OnRetryClicked);
-        }
-        if (rankingButton != null)
-        {
-            rankingButton.onClick.RemoveListener(OnClickRankingButton);
         }
     }
 
@@ -103,7 +66,6 @@ public class GameOverPanel : MonoBehaviour
     /// <param name="isNewRecord">최고 점수 갱신 여부</param>
     public void Setup(int currentScore, int bestScore, bool isNewRecord)
     {
-        // 1. 점수 표기
         if (currentScoreText != null)
         {
             currentScoreText.text = currentScore.ToString("N0");
@@ -114,27 +76,20 @@ public class GameOverPanel : MonoBehaviour
             bestScoreText.text = bestScore.ToString("N0");
         }
 
-        // 2. 패널 활성화
         gameObject.SetActive(true);
 
-        // 3. 재시작 버튼 지연 애니메이션 시작
-        if (retryEnableCoroutine != null) 
+        if (retryEnableCoroutine != null)
         {
             StopCoroutine(retryEnableCoroutine);
         }
         retryEnableCoroutine = StartCoroutine(AnimateRetryButton());
     }
 
-    /// <summary>
-    /// 재시작 버튼이 바로 눌리지 않도록 약간의 딜레이 후 버튼을 애니메이션과 함께 나타나게 함.
-    /// </summary>
-    /// <returns></returns>
     private IEnumerator AnimateRetryButton()
     {
-        // 초기 상태 설정: 버튼 비활성화 및 크기/알파 0
         retryButton.interactable = false;
         retryButton.transform.localScale = Vector3.zero;
-        if (retryButtonCanvasGroup != null) 
+        if (retryButtonCanvasGroup != null)
         {
             retryButtonCanvasGroup.alpha = 0f;
         }
@@ -144,12 +99,11 @@ public class GameOverPanel : MonoBehaviour
         float timer = 0f;
         while (timer < animDuration)
         {
-            timer += Time.unscaledDeltaTime; 
-            
-            float progress = Mathf.Clamp01(timer / animDuration); // 1을 넘지 않도록 Clamp
+            timer += Time.unscaledDeltaTime;
+
+            float progress = Mathf.Clamp01(timer / animDuration);
             float curveValue = appearanceCurve.Evaluate(progress);
 
-            // 크기 및 투명도 애니메이션
             retryButton.transform.localScale = Vector3.one * curveValue;
             if (retryButtonCanvasGroup != null)
             {
@@ -159,25 +113,12 @@ public class GameOverPanel : MonoBehaviour
             yield return null;
         }
 
-        // 최종 상태 보장 (애니메이션 끝난 후 확실하게 1로 설정)
         retryButton.transform.localScale = Vector3.one;
-        if (retryButtonCanvasGroup != null) 
+        if (retryButtonCanvasGroup != null)
         {
             retryButtonCanvasGroup.alpha = 1f;
         }
 
-        // 터치 활성화
         retryButton.interactable = true;
-    }
-
-    /// <summary>
-    /// 랭킹 버튼 클릭 시 랭킹 팝업을 엶.
-    /// </summary>
-    public void OnClickRankingButton()
-    {
-        if (rankingPopup != null)
-        {
-            rankingPopup.OpenPopup();
-        }
     }
 }

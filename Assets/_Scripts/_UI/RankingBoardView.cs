@@ -25,6 +25,7 @@ public class RankingBoardView : MonoBehaviour
 
     private RankingScorePressable myScorePressable;
     private Coroutine scrollResetRoutine;
+    private CanvasGroup contentLoadingCanvasGroup;
 
     private void Awake()
     {
@@ -143,6 +144,22 @@ public class RankingBoardView : MonoBehaviour
         if (loadingMessageObject != null)
         {
             loadingMessageObject.SetActive(isLoading);
+        }
+        else if (contentParent != null)
+        {
+            // 씬에 Loading UI 오브젝트가 없을 때 리스트 영역으로 로딩 상태 표시
+            if (contentLoadingCanvasGroup == null)
+            {
+                contentLoadingCanvasGroup = contentParent.GetComponent<CanvasGroup>();
+                if (contentLoadingCanvasGroup == null)
+                {
+                    contentLoadingCanvasGroup = contentParent.gameObject.AddComponent<CanvasGroup>();
+                }
+            }
+
+            contentLoadingCanvasGroup.alpha = isLoading ? 0.35f : 1f;
+            contentLoadingCanvasGroup.interactable = !isLoading;
+            contentLoadingCanvasGroup.blocksRaycasts = !isLoading;
         }
 
         if (isLoading && offlineMessageObject != null)
