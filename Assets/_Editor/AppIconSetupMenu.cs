@@ -46,7 +46,7 @@ public static class AppIconSetupMenu
 
     static void ApplyAndroidIcons(Texture2D source, IconKind kind)
     {
-        int[] sizes = PlayerSettings.GetIconSizes(kind, NamedBuildTarget.Android);
+        int[] sizes = PlayerSettings.GetIconSizes(NamedBuildTarget.Android, kind);
         if (sizes == null || sizes.Length == 0)
         {
             return;
