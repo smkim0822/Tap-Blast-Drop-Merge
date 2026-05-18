@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: cf70292b84c766c46bafb99f36f4b269
+guid: 3c101d7a9f2b3384d8f94f84e511f964
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 638157362183510737
-    second: 4.ranking_panel_background_0
+      213: 6044949717005236469
+    second: image_rankingborder_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: 4.ranking_panel_background_0
+      name: image_rankingborder_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 880
-        height: 810
+        width: 660
+        height: 12
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 1da9fb36db03bd800800000000000000
-      internalID: 638157362183510737
+      spriteID: 5f8f1377db9f3e350800000000000000
+      internalID: 6044949717005236469
       vertices: []
       indices: 
       edges: []
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      4.ranking_panel_background_0: 638157362183510737
+      image_rankingborder_0: 6044949717005236469
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -40,6 +40,8 @@ public class RankingPopup : MonoBehaviour
     [Tooltip("키보드 대응으로 팝업이 위아래로 이동할 때의 애니메이션 속도")]
     public float moveAnimDuration = 0.2f;
 
+    private static Sprite defaultUiSprite;
+
     private bool isAnimating = false;
     private bool isEditPopupClosing = false;
     private RectTransform editPopupRect;
@@ -71,11 +73,8 @@ public class RankingPopup : MonoBehaviour
         }
         rankingSyncFlow = new RankingSyncFlow(this, boardView);
 
-        // 버튼 및 입력창 이벤트 리스너 연결
-        if (editNameButton != null)
-        {
-            editNameButton.onClick.AddListener(OpenEditNamePopup);
-        }
+        ResolveEditNameButton();
+        BindEditNameButton();
 
         if (saveNameButton != null)
         {
@@ -102,10 +101,81 @@ public class RankingPopup : MonoBehaviour
         // 수정 팝업은 처음에 꺼둠
         if (editPopupRoot != null)
         {
+            ConfigureEditPopupLayout();
             editPopupRoot.SetActive(false);
         }
 
         isInitialized = true;
+    }
+
+    private void ConfigureEditPopupLayout()
+    {
+        RectTransform popupRootRect = editPopupRoot.GetComponent<RectTransform>();
+        if (popupRootRect == null)
+        {
+            return;
+        }
+
+        if (editPopupRoot.transform.parent != transform)
+        {
+            editPopupRoot.transform.SetParent(transform, false);
+        }
+
+        StretchToParent(popupRootRect);
+
+        Transform dimTransform = editPopupRoot.transform.Find("DimPanel");
+        if (dimTransform != null && dimTransform.TryGetComponent(out Image dimImage) && dimImage.sprite == null)
+        {
+            dimImage.sprite = GetDefaultUiSprite();
+        }
+    }
+
+    private static void StretchToParent(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.localScale = Vector3.one;
+    }
+
+    private static Sprite GetDefaultUiSprite()
+    {
+        if (defaultUiSprite == null)
+        {
+            defaultUiSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
+        }
+
+        return defaultUiSprite;
+    }
+
+    private void ResolveEditNameButton()
+    {
+        if (editNameButton != null)
+        {
+            return;
+        }
+
+        Button[] buttons = GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i].gameObject.name == "EditNameButton")
+            {
+                editNameButton = buttons[i];
+                return;
+            }
+        }
+    }
+
+    private void BindEditNameButton()
+    {
+        if (editNameButton == null)
+        {
+            return;
+        }
+
+        editNameButton.onClick.RemoveListener(OpenEditNamePopup);
+        editNameButton.onClick.AddListener(OpenEditNamePopup);
     }
 
     private void OnDestroy()
@@ -154,6 +224,7 @@ public class RankingPopup : MonoBehaviour
         if (isAnimating) return;
 
         EnsureInitialized();
+        BindEditNameButton();
         gameObject.SetActive(true);
 
         if (RankingManager.Instance != null)
@@ -161,6 +232,12 @@ public class RankingPopup : MonoBehaviour
             StartCoroutine(RankingManager.Instance.CheckServerStatus());
         }
         
+        if (boardView != null)
+        {
+            boardView.RefreshLocalMyRank();
+            boardView.ResetScrollToTop();
+        }
+
         RefreshRanking();
         StartCoroutine(AnimateScale(popupWindow, Vector3.zero, Vector3.one, animDuration, openCurve, () => isAnimating = false));
     }
@@ -198,22 +275,35 @@ public class RankingPopup : MonoBehaviour
 
     // --- 닉네임 수정 로직 ---
 
-    private void OpenEditNamePopup()
+    public void OpenEditNamePopup()
     {
-        if (editPopupRoot == null)
+        if (editPopupRoot == null || editPopupContent == null)
         {
             return;
         }
+
+        if (editPopupRoot.activeSelf && !isEditPopupClosing)
+        {
+            return;
+        }
+
+        EnsureInitialized();
+        ConfigureEditPopupLayout();
+        editPopupRoot.transform.SetAsLastSibling();
         editPopupRoot.SetActive(true);
         isEditPopupClosing = false;
 
         if (editPopupRect != null)
         {
             editPopupRect.anchoredPosition = Vector2.zero;
+            editPopupRect.localScale = Vector3.one;
         }
+
         if (nameInput != null)
         {
-            nameInput.text = NicknameManager.Instance?.GetNickname();
+            nameInput.text = NicknameManager.Instance != null
+                ? NicknameManager.Instance.GetNickname()
+                : string.Empty;
         }
 
         if (editAnimCoroutine != null)
@@ -221,13 +311,14 @@ public class RankingPopup : MonoBehaviour
             StopCoroutine(editAnimCoroutine);
         }
 
-        Vector3 startScale = editPopupContent.localScale;
-        if (startScale == Vector3.one)
+        RectTransform contentRect = editPopupContent as RectTransform ?? editPopupContent.GetComponent<RectTransform>();
+        if (contentRect == null)
         {
-            startScale = Vector3.zero;
+            return;
         }
 
-        editAnimCoroutine = StartCoroutine(AnimateScale(editPopupContent.GetComponent<RectTransform>(), Vector3.zero, Vector3.one, editPopupAnimDuration));
+        contentRect.localScale = Vector3.zero;
+        editAnimCoroutine = StartCoroutine(AnimateEditPopupScale(contentRect, Vector3.zero, Vector3.one, editPopupAnimDuration));
     }
 
     public void CloseEditNamePopup()
@@ -245,11 +336,19 @@ public class RankingPopup : MonoBehaviour
             StopCoroutine(editAnimCoroutine);
         }
 
-        editAnimCoroutine = StartCoroutine(AnimateScale(editPopupContent.GetComponent<RectTransform>(), editPopupContent.localScale, Vector3.zero, editPopupAnimDuration, null, () =>
+        RectTransform contentRect = editPopupContent as RectTransform ?? editPopupContent.GetComponent<RectTransform>();
+        if (contentRect == null)
         {
             editPopupRoot.SetActive(false);
             isEditPopupClosing = false;
-        }));     
+            return;
+        }
+
+        editAnimCoroutine = StartCoroutine(AnimateEditPopupScale(contentRect, contentRect.localScale, Vector3.zero, editPopupAnimDuration, () =>
+        {
+            editPopupRoot.SetActive(false);
+            isEditPopupClosing = false;
+        }));
     }
 
     private void SaveNewNickname()
@@ -273,6 +372,11 @@ public class RankingPopup : MonoBehaviour
         // 매니저를 통해 저장 (매니저 내부에서 유효성 검사 수행함)
         if (NicknameManager.Instance != null && NicknameManager.Instance.SetNickname(newName))
         {
+            if (boardView != null)
+            {
+                boardView.RefreshLocalMyRank();
+            }
+
             CloseEditNamePopup();
             if (rankingSyncFlow != null)
             {
@@ -305,6 +409,24 @@ public class RankingPopup : MonoBehaviour
     /// <param name="curve">크기 변화 속도를 조절할 커브</param>
     /// <param name="onComplete">애니메이션이 완전히 끝난 후 실행할 콜백 함수</param>
     /// <returns></returns>
+    private IEnumerator AnimateEditPopupScale(RectTransform target, Vector3 start, Vector3 end, float duration, Action onComplete = null)
+    {
+        float elapsed = 0f;
+        target.localScale = start;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / duration;
+            float easeT = 1f - Mathf.Pow(1f - t, 3f);
+            target.localScale = Vector3.LerpUnclamped(start, end, easeT);
+            yield return null;
+        }
+
+        target.localScale = end;
+        onComplete?.Invoke();
+    }
+
     private IEnumerator AnimateScale(RectTransform target, Vector3 start, Vector3 end, float duration, AnimationCurve curve = null, Action onComplete = null)
     {
         isAnimating = true;
