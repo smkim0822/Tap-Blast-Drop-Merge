@@ -49,12 +49,6 @@ public class SpawnerVisuals : MonoBehaviour
     Vector3 originalScale;
 
     static readonly RaycastHit2D[] RaycastHitsBuffer = new RaycastHit2D[16];
-    static readonly ContactFilter2D GroundRaycastFilter = new ContactFilter2D
-    {
-        useLayerMask = true,
-        layerMask = ~0,
-        useTriggers = false,
-    };
 
     void Awake()
     {
@@ -97,14 +91,19 @@ public class SpawnerVisuals : MonoBehaviour
         }
         if (useRaycastForGround)
         {
-            GroundRaycastFilter.layerMask = groundRaycastMask;
+            var filter = new ContactFilter2D
+            {
+                useLayerMask = true,
+                layerMask = groundRaycastMask,
+                useTriggers = false,
+            };
 
             // 여러 콜라이더(공/폭탄/이펙트) 위를 지나칠 수 있으니,
             // Dynamic Rigidbody2D는 스킵하고 "벽/바닥(Static 또는 Rigidbody 없음)"을 첫 히트로 사용.
             int hitCount = Physics2D.Raycast(
                 currentPos,
                 Vector2.down,
-                GroundRaycastFilter,
+                filter,
                 RaycastHitsBuffer,
                 groundRaycastDistance);
             for (int i = 0; i < hitCount; i++)
