@@ -39,6 +39,11 @@ public class GameOverPanel : MonoBehaviour
 
     private Coroutine retryEnableCoroutine;
 
+    void Awake()
+    {
+        ResolveRankingButton();
+    }
+
     void Start()
     {
         if (retryButton != null)
@@ -48,6 +53,24 @@ public class GameOverPanel : MonoBehaviour
         if (rankingButton != null)
         {
             rankingButton.onClick.AddListener(OnClickRankingButton);
+        }
+    }
+
+    void ResolveRankingButton()
+    {
+        if (rankingButton != null)
+        {
+            return;
+        }
+
+        Button[] buttons = GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i].gameObject.name == "RankingButton")
+            {
+                rankingButton = buttons[i];
+                return;
+            }
         }
     }
 
