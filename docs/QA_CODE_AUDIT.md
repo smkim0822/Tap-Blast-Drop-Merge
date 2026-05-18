@@ -23,15 +23,13 @@
 | `loadingMessageObject` 씬 연결 | ❌ 씬에 Loading 오브젝트 없음 |
 | 코드 폴백 | ✅ `RankingBoardView.SetLoading` — `contentParent` CanvasGroup (#PR) |
 
-## #109 게임오버 → 랭킹
+## #109 전체 플로우
 
 | 항목 | 결과 |
 |------|------|
-| `GameOverPanel.rankingButton` | ❌ 인스펙터 미연결 |
-| `PopupCard` 자식에 `RankingButton` | ❌ **게임오버 카드에 랭킹 버튼 UI 없음** (Retry만 존재) |
-| `ResolveRankingButton()` | 런타임 탐색 실패 가능 |
-
-**권장:** 피그마/씬에 게임오버 랭킹 버튼 추가 후 `rankingButton` 연결, 또는 메인/설정 랭킹만 사용한다고 명시.
+| 메인 → 플레이 → 게임오버 → 재시작 | ✅ 코드 경로 정상 |
+| 게임오버 UI | Retry·점수만 (의도적 설계) |
+| 랭킹 진입 | 메인·설정 화면 |
 
 ## #110 Safe Area
 

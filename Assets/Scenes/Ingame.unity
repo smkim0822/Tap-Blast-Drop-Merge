@@ -2837,7 +2837,6 @@ MonoBehaviour:
   currentScoreText: {fileID: 1887124760}
   bestScoreText: {fileID: 1975094607}
   retryButton: {fileID: 816349314}
-  rankingButton: {fileID: 0}
   retryButtonCanvasGroup: {fileID: 816349317}
   appearDelay: 0.5
   animDuration: 0.3
@@ -2874,7 +2873,6 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  rankingPopup: {fileID: 763654309}
 --- !u!1 &982123252
 GameObject:
   m_ObjectHideFlags: 0
