@@ -49,6 +49,7 @@ public class SpawnerVisuals : MonoBehaviour
     Vector3 originalScale;
 
     static readonly RaycastHit2D[] RaycastHitsBuffer = new RaycastHit2D[16];
+    static MaterialPropertyBlock guideLinePropertyBlock;
 
     void Awake()
     {
@@ -132,8 +133,14 @@ public class SpawnerVisuals : MonoBehaviour
         guideLine.SetPosition(1, endPos);
 
         float distance = Vector3.Distance(currentPos, endPos);
-        // sharedMaterial: 드래그 중 매 프레임 material 인스턴스 복제(GC/메모리) 방지
-        guideLine.sharedMaterial.mainTextureScale = new Vector2(distance * lineTextureScale, 1f);
+        if (guideLinePropertyBlock == null)
+        {
+            guideLinePropertyBlock = new MaterialPropertyBlock();
+        }
+
+        guideLine.GetPropertyBlock(guideLinePropertyBlock);
+        guideLinePropertyBlock.SetTextureScale("_MainTex", new Vector2(distance * lineTextureScale, 1f));
+        guideLine.SetPropertyBlock(guideLinePropertyBlock);
 
         guideLine.startColor = guideColor;
         guideColor.a = 0.3f;
