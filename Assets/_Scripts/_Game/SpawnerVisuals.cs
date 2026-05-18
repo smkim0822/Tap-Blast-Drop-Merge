@@ -48,6 +48,14 @@ public class SpawnerVisuals : MonoBehaviour
     SpriteRenderer spawnerRenderer;
     Vector3 originalScale;
 
+    static readonly RaycastHit2D[] RaycastHitsBuffer = new RaycastHit2D[16];
+    static readonly ContactFilter2D GroundRaycastFilter = new ContactFilter2D
+    {
+        useLayerMask = true,
+        layerMask = ~0,
+        useTriggers = false,
+    };
+
     void Awake()
     {
         spawnerRenderer = GetComponent<SpriteRenderer>();
@@ -89,20 +97,19 @@ public class SpawnerVisuals : MonoBehaviour
         }
         if (useRaycastForGround)
         {
-            var filter = new ContactFilter2D
-            {
-                useLayerMask = true,
-                layerMask = groundRaycastMask,
-                useTriggers = false, // GameOverLine 같은 Trigger는 무시
-            };
+            GroundRaycastFilter.layerMask = groundRaycastMask;
 
             // 여러 콜라이더(공/폭탄/이펙트) 위를 지나칠 수 있으니,
             // Dynamic Rigidbody2D는 스킵하고 "벽/바닥(Static 또는 Rigidbody 없음)"을 첫 히트로 사용.
-            RaycastHit2D[] hits = new RaycastHit2D[16];
-            int hitCount = Physics2D.Raycast(currentPos, Vector2.down, filter, hits, groundRaycastDistance);
+            int hitCount = Physics2D.Raycast(
+                currentPos,
+                Vector2.down,
+                GroundRaycastFilter,
+                RaycastHitsBuffer,
+                groundRaycastDistance);
             for (int i = 0; i < hitCount; i++)
             {
-                Collider2D col = hits[i].collider;
+                Collider2D col = RaycastHitsBuffer[i].collider;
                 if (col == null) continue;
 
                 Rigidbody2D rb = col.attachedRigidbody;
@@ -111,7 +118,7 @@ public class SpawnerVisuals : MonoBehaviour
                     continue; // 공/폭탄 등 동적 오브젝트 무시
                 }
 
-                endY = hits[i].point.y + groundRaycastOffsetY;
+                endY = RaycastHitsBuffer[i].point.y + groundRaycastOffsetY;
                 break;
             }
         }
@@ -126,7 +133,8 @@ public class SpawnerVisuals : MonoBehaviour
         guideLine.SetPosition(1, endPos);
 
         float distance = Vector3.Distance(currentPos, endPos);
-        guideLine.material.mainTextureScale = new Vector2(distance * lineTextureScale, 1f);
+        // sharedMaterial: 드래그 중 매 프레임 material 인스턴스 복제(GC/메모리) 방지
+        guideLine.sharedMaterial.mainTextureScale = new Vector2(distance * lineTextureScale, 1f);
 
         guideLine.startColor = guideColor;
         guideColor.a = 0.3f;
