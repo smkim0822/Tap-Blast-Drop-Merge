@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Android;
 using UnityEditor.Build;
 using UnityEngine;
 
@@ -24,11 +25,10 @@ public static class AppIconSetupMenu
         PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { source }, IconKind.Application);
 
         ApplyAndroidIcons(source, IconKind.Application);
-        ApplyAndroidIcons(source, IconKind.Round);
-        ApplyAndroidIcons(source, IconKind.Adaptive);
+        ApplyAndroidAdaptiveIcons(source);
 
         AssetDatabase.SaveAssets();
-        Debug.Log("[AppIcon] Default + Android(Application/Round/Adaptive) 아이콘 적용 완료. Player Settings에서 확인하세요.");
+        Debug.Log("[AppIcon] Default + Android(Application/Adaptive) 아이콘 적용 완료. Player Settings에서 확인하세요.");
     }
 
     static Texture2D LoadIconTexture()
@@ -59,6 +59,25 @@ public static class AppIconSetupMenu
         }
 
         PlayerSettings.SetIcons(NamedBuildTarget.Android, icons, kind);
+    }
+
+    static void ApplyAndroidAdaptiveIcons(Texture2D source)
+    {
+        var platform = NamedBuildTarget.Android;
+        var kind = AndroidPlatformIconKind.Adaptive;
+        PlatformIcon[] icons = PlayerSettings.GetPlatformIcons(platform, kind);
+        if (icons == null || icons.Length == 0)
+        {
+            return;
+        }
+
+        Texture2D[] layers = { source, source };
+        for (int i = 0; i < icons.Length; i++)
+        {
+            icons[i].SetTextures(layers);
+        }
+
+        PlayerSettings.SetPlatformIcons(platform, kind, icons);
     }
 }
 #endif

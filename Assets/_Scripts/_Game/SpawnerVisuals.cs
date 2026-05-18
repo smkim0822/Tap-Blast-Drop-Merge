@@ -139,7 +139,7 @@ public class SpawnerVisuals : MonoBehaviour
         }
 
         guideLine.GetPropertyBlock(guideLinePropertyBlock);
-        guideLinePropertyBlock.SetTextureScale("_MainTex", new Vector2(distance * lineTextureScale, 1f));
+        guideLinePropertyBlock.SetVector("_MainTex_ST", new Vector4(distance * lineTextureScale, 1f, 0f, 0f));
         guideLine.SetPropertyBlock(guideLinePropertyBlock);
 
         guideLine.startColor = guideColor;
