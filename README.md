@@ -2,8 +2,9 @@
 
 > **"직관적인 조작과 예측 불가능한 물리 반응이 결합된 모바일 하이퍼캐주얼 낙하형 퍼즐 게임"**
 
-![Project Status](https://img.shields.io/badge/Status-Developing-yellow?style=flat-square) 
-![Unity](https://img.shields.io/badge/Unity-6_(6000.0.38f1)-black?style=flat-square&logo=unity)
+![Project Status](https://img.shields.io/badge/Status-Release_v1.0.0-brightgreen?style=flat-square)
+![Unity](https://img.shields.io/badge/Unity-6_(6000.3.8f1)-black?style=flat-square&logo=unity)
+![Platform](https://img.shields.io/badge/Platform-Android-green?style=flat-square)
 
 ## 🎮 프로젝트 소개
 **Tap Blast: Drop & Merge**는 물리 엔진을 기반으로 한 낙하형 병합 퍼즐 게임입니다. 
@@ -57,15 +58,12 @@
 - **메뉴**: `Dev/Migrate Refactor References (Active Scene)`
 - **역할**: 활성 씬에서 `GameManager/ScoreManager/Spawner/RankingPopup` 등 레퍼런스를 새 컴포넌트(`GameUIRoots`, `ScoreHudView`, `SpawnerVisuals`, `RankingBoardView`)로 복사
 
-## 🔀 개발 워크플로
-
-이슈 → 브랜치 → PR 순서와 커밋·템플릿 규칙은 **[docs/WORKFLOW.md](docs/WORKFLOW.md)** 를 참고합니다.
-
 ## 🔗 관련 프로젝트 (Related Project)
 * [[랭킹 서버 레포지토리 (RankingServer)]](https://github.com/romantic02/RankingServer)
 
 ## 📅 개발 히스토리 (Change Log)
-* **v0.9.0:** 공식 타이틀 **Tap Blast: Drop & Merge** 확정, GitHub 저장소명 정리
+* **v1.0.0:** Android Release 빌드·앱 아이콘, QA·씬 레퍼런스 정리, 세로 화면 orientation 수정, `ServerConfig` example·gitignore 정리
+* **v0.9.0:** 피그마 기반 UI 디자인 반영(메인·인게임·랭킹·설정·결과) — **주요 작업**, 공식 타이틀 **Tap Blast: Drop & Merge** 확정 및 저장소명 정리
 * **v0.8.4:** 결합도 높은 매니저/로직 리팩토링(세션 플로우 분리, 점수 단일 소스, 랭킹 동기화/뷰 분리, 풀 안정화), 운영 서버 Base URL/포트 처리 보강
 * **v0.8.3:** 닉네임 한글 입력(IME) 시스템 구축, 정적 폰트 아틀라스 렌더링 최적화 (OOM 및 Tofu 현상 방지)
 * **v0.8.2:** 에뮬레이터 및 실기기 환경 오프라인 UI 동기화 결함 수정, 비동기 레이스 컨디션(Race Condition) 최적화
