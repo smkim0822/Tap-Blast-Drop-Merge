@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using System.Collections;
 using System;
 
@@ -44,7 +45,13 @@ public class RankingPopup : MonoBehaviour
 
     private bool isAnimating = false;
     private bool isEditPopupClosing = false;
+
+    public bool IsPopupOpen => gameObject.activeInHierarchy;
+    public bool IsEditNamePopupOpen =>
+        editPopupRoot != null && editPopupRoot.activeSelf && !isEditPopupClosing;
     private RectTransform editPopupRect;
+    private CanvasGroup editPopupCanvasGroup;
+    private Button editDimButton;
     private Coroutine moveCoroutine;
     private Coroutine editAnimCoroutine;
     private Coroutine syncRoutine;
@@ -102,10 +109,45 @@ public class RankingPopup : MonoBehaviour
         if (editPopupRoot != null)
         {
             ConfigureEditPopupLayout();
+            CacheEditPopupChrome();
             editPopupRoot.SetActive(false);
         }
 
         isInitialized = true;
+    }
+
+    void CacheEditPopupChrome()
+    {
+        if (editPopupRoot == null)
+        {
+            return;
+        }
+
+        editPopupCanvasGroup = editPopupRoot.GetComponent<CanvasGroup>();
+        if (editPopupCanvasGroup == null)
+        {
+            editPopupCanvasGroup = editPopupRoot.AddComponent<CanvasGroup>();
+        }
+
+        Transform dimTransform = editPopupRoot.transform.Find("DimPanel");
+        if (dimTransform != null)
+        {
+            editDimButton = dimTransform.GetComponent<Button>();
+        }
+    }
+
+    void SetEditPopupInputBlock(bool block)
+    {
+        if (editPopupCanvasGroup != null)
+        {
+            editPopupCanvasGroup.blocksRaycasts = block;
+            editPopupCanvasGroup.interactable = block;
+        }
+
+        if (editDimButton != null)
+        {
+            editDimButton.interactable = block;
+        }
     }
 
     private void ConfigureEditPopupLayout()
@@ -289,6 +331,7 @@ public class RankingPopup : MonoBehaviour
 
         EnsureInitialized();
         ConfigureEditPopupLayout();
+        CacheEditPopupChrome();
         editPopupRoot.transform.SetAsLastSibling();
         editPopupRoot.SetActive(true);
         isEditPopupClosing = false;
@@ -304,7 +347,12 @@ public class RankingPopup : MonoBehaviour
             nameInput.text = NicknameManager.Instance != null
                 ? NicknameManager.Instance.GetNickname()
                 : string.Empty;
+            nameInput.DeactivateInputField();
         }
+
+        boardView?.SetScrollEnabled(false);
+        SetEditPopupInputBlock(true);
+        SetEditDimInteractable(false);
 
         if (editAnimCoroutine != null)
         {
@@ -318,7 +366,46 @@ public class RankingPopup : MonoBehaviour
         }
 
         contentRect.localScale = Vector3.zero;
-        editAnimCoroutine = StartCoroutine(AnimateEditPopupScale(contentRect, Vector3.zero, Vector3.one, editPopupAnimDuration));
+        editAnimCoroutine = StartCoroutine(OpenEditNamePopupRoutine(contentRect));
+    }
+
+    IEnumerator OpenEditNamePopupRoutine(RectTransform contentRect)
+    {
+        yield return AnimateEditPopupScale(contentRect, Vector3.zero, Vector3.one, editPopupAnimDuration);
+
+        SetEditDimInteractable(true);
+        yield return FocusNameInputRoutine();
+    }
+
+    void SetEditDimInteractable(bool interactable)
+    {
+        if (editDimButton != null)
+        {
+            editDimButton.interactable = interactable;
+        }
+    }
+
+    IEnumerator FocusNameInputRoutine()
+    {
+        if (nameInput == null)
+        {
+            yield break;
+        }
+
+        yield return null;
+        Canvas.ForceUpdateCanvases();
+
+        nameInput.DeactivateInputField();
+        yield return null;
+
+        EventSystem eventSystem = EventSystem.current;
+        if (eventSystem != null)
+        {
+            eventSystem.SetSelectedGameObject(nameInput.gameObject);
+        }
+
+        nameInput.ActivateInputField();
+        yield return MoveCursorToEndRoutine();
     }
 
     public void CloseEditNamePopup()
@@ -330,7 +417,12 @@ public class RankingPopup : MonoBehaviour
         }
 
         isEditPopupClosing = true;
-        // 애니메이션
+
+        if (nameInput != null)
+        {
+            nameInput.DeactivateInputField();
+        }
+
         if (editAnimCoroutine != null)
         {
             StopCoroutine(editAnimCoroutine);
@@ -341,6 +433,8 @@ public class RankingPopup : MonoBehaviour
         {
             editPopupRoot.SetActive(false);
             isEditPopupClosing = false;
+            SetEditPopupInputBlock(false);
+            boardView?.SetScrollEnabled(true);
             return;
         }
 
@@ -348,6 +442,8 @@ public class RankingPopup : MonoBehaviour
         {
             editPopupRoot.SetActive(false);
             isEditPopupClosing = false;
+            SetEditPopupInputBlock(false);
+            boardView?.SetScrollEnabled(true);
         }));
     }
 
@@ -425,6 +521,7 @@ public class RankingPopup : MonoBehaviour
 
         target.localScale = end;
         onComplete?.Invoke();
+        yield break;
     }
 
     private IEnumerator AnimateScale(RectTransform target, Vector3 start, Vector3 end, float duration, AnimationCurve curve = null, Action onComplete = null)

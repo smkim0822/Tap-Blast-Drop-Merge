@@ -10,6 +10,8 @@ public class GameUIRoots : MonoBehaviour
     [Header("UI Controllers (UI 컨트롤러)")]
     [SerializeField] MainPanel _mainPanel;
     [SerializeField] GameOverPanel _gameOverPanel;
+    [SerializeField] SettingsPopup _settingsPopup;
+    [SerializeField] RankingPopup _rankingPopup;
 
     [Header("Game Objects (게임 오브젝트)")]
     [SerializeField] GameObject _gamePlayGroup;
@@ -65,4 +67,62 @@ public class GameUIRoots : MonoBehaviour
 
         SessionEvents.OnGameStart?.Invoke();
     }
+
+    /// <summary>
+    /// Android 뒤로가기·Escape 입력 처리. 처리했으면 true.
+    /// </summary>
+    public bool TryHandleBackNavigation()
+    {
+        if (_rankingPopup != null && _rankingPopup.IsEditNamePopupOpen)
+        {
+            _rankingPopup.CloseEditNamePopup();
+            return true;
+        }
+
+        if (_rankingPopup != null && _rankingPopup.IsPopupOpen)
+        {
+            _rankingPopup.ClosePopup();
+            return true;
+        }
+
+        if (_settingsPopup != null && _settingsPopup.gameObject.activeInHierarchy)
+        {
+            _settingsPopup.OnClickClose();
+            return true;
+        }
+
+        if (IsGameOverVisible())
+        {
+            SessionEvents.OnRequestGoToMain?.Invoke();
+            return true;
+        }
+
+        if (IsInPlayVisible())
+        {
+            if (_settingsPopup != null)
+            {
+                _settingsPopup.Open(true);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool IsMainMenuVisible()
+    {
+        if (_mainPanel == null || !_mainPanel.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        return !IsGameOverVisible() && !IsInPlayVisible();
+    }
+
+    bool IsGameOverVisible() =>
+        _gameOverPanel != null && _gameOverPanel.gameObject.activeInHierarchy;
+
+    bool IsInPlayVisible() =>
+        _gamePlayGroup != null && _gamePlayGroup.activeInHierarchy && !IsGameOverVisible();
 }

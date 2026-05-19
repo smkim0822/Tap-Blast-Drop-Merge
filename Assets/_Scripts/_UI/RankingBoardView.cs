@@ -51,6 +51,20 @@ public class RankingBoardView : MonoBehaviour
         UpdateMyRank(null, ResolveLocalNickname(), localBest);
     }
 
+    public void SetScrollEnabled(bool enabled)
+    {
+        if (rankingScrollRect == null)
+        {
+            return;
+        }
+
+        rankingScrollRect.enabled = enabled;
+        if (!enabled)
+        {
+            rankingScrollRect.velocity = Vector2.zero;
+        }
+    }
+
     public void ShowOffline(MyRankData myData, string displayName, int localBest)
     {
         SetLoading(false);

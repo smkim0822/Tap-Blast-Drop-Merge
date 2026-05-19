@@ -7241,6 +7241,7 @@ GameObject:
   - component: {fileID: 1916613451}
   - component: {fileID: 1916613453}
   - component: {fileID: 1916613452}
+  - component: {fileID: 1916613454}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -7372,10 +7373,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameUIRoots
   _mainPanel: {fileID: 820773129}
   _gameOverPanel: {fileID: 968155876}
+  _settingsPopup: {fileID: 1275809212}
+  _rankingPopup: {fileID: 763654309}
   _gamePlayGroup: {fileID: 850670292}
   _gamePlayUI: {fileID: 1024946514}
   _player: {fileID: 1202033884}
   _playerStartPos: {fileID: 1202033886}
+--- !u!114 &1916613454
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916613443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7c4a2b18e3d4f6a9b0c1d2e3f4a5b6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BackNavigationHandler
+  uiRoots: {fileID: 1916613453}
+  exitConfirmSeconds: 2
 --- !u!1 &1918399977
 GameObject:
   m_ObjectHideFlags: 0
