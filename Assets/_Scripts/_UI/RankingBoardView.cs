@@ -23,9 +23,14 @@ public class RankingBoardView : MonoBehaviour
     [SerializeField] TextMeshProUGUI myRankText;
     [SerializeField] TextMeshProUGUI myScoreText;
 
+    [Header("Debug (에디터 확인용)")]
+    [Tooltip("에디터 Play에서만 적용. 온라인 랭킹 요청 구간에 최소 대기(초)를 넣어 로딩 UI를 볼 때 사용. 0이면 끔. 오프라인은 항상 즉시 표시. 빌드에서는 무시됩니다.")]
+    [SerializeField, Min(0f)] float editorMinimumRankLoadingSeconds;
+
     private RankingScorePressable myScorePressable;
     private Coroutine scrollResetRoutine;
     private CanvasGroup contentLoadingCanvasGroup;
+    private GameObject _runtimeLoadingOverlay;
 
     private void Awake()
     {
@@ -37,6 +42,7 @@ public class RankingBoardView : MonoBehaviour
         ResolveMyRankReferences();
         EnsureMyScorePressable();
         HideStrayRankingItemPreview();
+        EnsureRuntimeLoadingOverlay();
     }
 
     /// <summary>
@@ -155,9 +161,10 @@ public class RankingBoardView : MonoBehaviour
 
     public void SetLoading(bool isLoading)
     {
-        if (loadingMessageObject != null)
+        GameObject loadingRoot = loadingMessageObject != null ? loadingMessageObject : _runtimeLoadingOverlay;
+        if (loadingRoot != null)
         {
-            loadingMessageObject.SetActive(isLoading);
+            loadingRoot.SetActive(isLoading);
         }
         else if (contentParent != null)
         {
@@ -180,6 +187,118 @@ public class RankingBoardView : MonoBehaviour
         {
             offlineMessageObject.SetActive(false);
         }
+    }
+
+    /// <summary>
+    /// 씬에 loadingMessageObject가 없을 때 Board 위에 기본 로딩 UI를 만듭니다.
+    /// 나중에 디자인 프리팹을 연결하면 이 오버레이는 사용되지 않습니다.
+    /// </summary>
+    void EnsureRuntimeLoadingOverlay()
+    {
+        if (loadingMessageObject != null || _runtimeLoadingOverlay != null)
+        {
+            return;
+        }
+
+        Transform board = transform.Find("Window/Board");
+        if (board == null)
+        {
+            return;
+        }
+
+        _runtimeLoadingOverlay = new GameObject("RankingLoadingOverlay", typeof(RectTransform), typeof(CanvasGroup));
+        RectTransform rootRt = _runtimeLoadingOverlay.GetComponent<RectTransform>();
+        rootRt.SetParent(board, false);
+        StretchToFullParent(rootRt);
+        rootRt.SetAsLastSibling();
+
+        CanvasGroup rootCg = _runtimeLoadingOverlay.GetComponent<CanvasGroup>();
+        rootCg.alpha = 1f;
+        rootCg.blocksRaycasts = true;
+        rootCg.interactable = false;
+
+        GameObject dimGo = new GameObject("Dim", typeof(RectTransform), typeof(Image));
+        RectTransform dimRt = dimGo.GetComponent<RectTransform>();
+        dimRt.SetParent(rootRt, false);
+        StretchToFullParent(dimRt);
+        Image dimImage = dimGo.GetComponent<Image>();
+        Image boardBg = board.GetComponent<Image>();
+        if (boardBg != null && boardBg.sprite != null)
+        {
+            dimImage.sprite = boardBg.sprite;
+            dimImage.type = boardBg.type;
+            dimImage.pixelsPerUnitMultiplier = boardBg.pixelsPerUnitMultiplier;
+            dimImage.preserveAspect = boardBg.preserveAspect;
+            dimImage.color = new Color(0f, 0f, 0f, 0.5f);
+        }
+        else
+        {
+            dimImage.sprite = GetOrCreateWhiteSprite();
+            dimImage.type = Image.Type.Simple;
+            dimImage.color = new Color(0f, 0f, 0f, 0.5f);
+        }
+
+        dimImage.raycastTarget = true;
+
+        GameObject labelGo = new GameObject("LoadingLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
+        RectTransform labelRt = labelGo.GetComponent<RectTransform>();
+        labelRt.SetParent(rootRt, false);
+        StretchToFullParent(labelRt);
+        TextMeshProUGUI label = labelGo.GetComponent<TextMeshProUGUI>();
+        label.raycastTarget = false;
+        label.text = "랭킹을 불러오는 중…";
+        label.fontSize = 52;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = Color.white;
+        label.enableAutoSizing = false;
+        if (myNameText != null)
+        {
+            label.font = myNameText.font;
+            label.fontSharedMaterial = myNameText.fontSharedMaterial;
+        }
+        else if (TMP_Settings.defaultFontAsset != null)
+        {
+            label.font = TMP_Settings.defaultFontAsset;
+        }
+
+        _runtimeLoadingOverlay.SetActive(false);
+    }
+
+    static void StretchToFullParent(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.localScale = Vector3.one;
+    }
+
+#if UNITY_EDITOR
+    /// <summary>에디터에서 랭킹 로딩 연출을 확인하기 위한 최소 대기(초).</summary>
+    internal float GetEditorMinRankLoadingHoldSeconds()
+    {
+        return Mathf.Max(0f, editorMinimumRankLoadingSeconds);
+    }
+#else
+    internal float GetEditorMinRankLoadingHoldSeconds() => 0f;
+#endif
+
+    static Sprite _cachedWhiteSprite;
+
+    static Sprite GetOrCreateWhiteSprite()
+    {
+        if (_cachedWhiteSprite != null)
+        {
+            return _cachedWhiteSprite;
+        }
+
+        Texture2D tex = Texture2D.whiteTexture;
+        _cachedWhiteSprite = Sprite.Create(
+            tex,
+            new Rect(0f, 0f, tex.width, tex.height),
+            new Vector2(0.5f, 0.5f),
+            100f);
+        return _cachedWhiteSprite;
     }
 
     public void ResetScrollToTop()

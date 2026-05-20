@@ -1868,6 +1868,7 @@ MonoBehaviour:
   myNameText: {fileID: 982123255}
   myRankText: {fileID: 1927764875}
   myScoreText: {fileID: 131737403}
+  editorMinimumRankLoadingSeconds: 0
 --- !u!1 &767029995
 GameObject:
   m_ObjectHideFlags: 0

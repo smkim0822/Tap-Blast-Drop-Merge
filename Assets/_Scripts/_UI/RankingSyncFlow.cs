@@ -21,7 +21,6 @@ public class RankingSyncFlow
     {
         if (isSyncing) return null;
 
-        boardView.SetLoading(true);
         if (RankingManager.Instance == null || !RankingManager.Instance.IsNetworkReached())
         {
             RenderOfflineState();
@@ -29,7 +28,9 @@ public class RankingSyncFlow
             return null;
         }
 
-        return coroutineHost.StartCoroutine(SyncAndLoadRankingRoutine(onOfflineFallback));
+        boardView.SetLoading(true);
+        float editorHold = boardView.GetEditorMinRankLoadingHoldSeconds();
+        return coroutineHost.StartCoroutine(SyncAndLoadRankingRoutine(onOfflineFallback, editorHold));
     }
 
     public Coroutine SyncNicknameAndRefresh(string newName)
@@ -45,9 +46,15 @@ public class RankingSyncFlow
         boardView.ShowOffline(null, $"{currentName} <size=70%><color=#FF7B7B>(Offline)</color></size>", localHighScore);
     }
 
-    IEnumerator SyncAndLoadRankingRoutine(Action onOfflineFallback)
+    IEnumerator SyncAndLoadRankingRoutine(Action onOfflineFallback, float editorHoldSeconds)
     {
         isSyncing = true;
+
+        if (editorHoldSeconds > 0f)
+        {
+            yield return new WaitForSecondsRealtime(editorHoldSeconds);
+        }
+
         MyRankData serverMyData = null;
         bool isMyRankLoaded = false;
         bool isNetworkError = false;
@@ -150,6 +157,7 @@ public class RankingSyncFlow
         }
 
         boardView.SetLoading(true);
+
         if (RankingManager.Instance != null)
         {
             yield return coroutineHost.StartCoroutine(RankingManager.Instance.UpdateNickname(newName));
