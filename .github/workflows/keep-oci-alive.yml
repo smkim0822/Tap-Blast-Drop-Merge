@@ -30,7 +30,7 @@ jobs:
           # 미설정이면 ServerConfig.cs의 운영 폴백 주소를 사용한다.
           OCI_HEALTH_URL: ${{ vars.OCI_HEALTH_URL }}
         run: |
-          url="${OCI_HEALTH_URL:-http://158.179.164.153:8080/api/health}"
+          url="${OCI_HEALTH_URL:-https://pd-ranking.duckdns.org/api/health}"
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Pinging: $url"
 
